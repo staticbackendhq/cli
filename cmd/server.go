@@ -110,16 +110,16 @@ func startServer(port string) {
 		db: make(map[string][]map[string]interface{}),
 	}
 
-	http.Handle("/register", chain(http.HandlerFunc(svr.register), svr.sb, svr.logger))
-	http.Handle("/login", chain(http.HandlerFunc(svr.login), svr.sb, svr.logger))
+	http.Handle("/register", chain(http.HandlerFunc(svr.register), svr.sb, svr.logger, svr.cors))
+	http.Handle("/login", chain(http.HandlerFunc(svr.login), svr.sb, svr.logger, svr.cors))
 
-	http.Handle("/db/", chain(http.HandlerFunc(svr.database), svr.sb, svr.logger))
-	http.Handle("/query/", chain(http.HandlerFunc(svr.query), svr.sb, svr.logger))
+	http.Handle("/db/", chain(http.HandlerFunc(svr.database), svr.sb, svr.logger, svr.cors))
+	http.Handle("/query/", chain(http.HandlerFunc(svr.query), svr.sb, svr.logger, svr.cors))
 
-	http.Handle("/postform/", chain(http.HandlerFunc(svr.postForm), svr.sb, svr.logger))
+	http.Handle("/postform/", chain(http.HandlerFunc(svr.postForm), svr.sb, svr.logger, svr.cors))
 
-	http.Handle("/storage/upload", chain(http.HandlerFunc(svr.upload), svr.sb, svr.logger))
-	http.Handle("/_servefile_/", chain(http.HandlerFunc(svr.serveFile), svr.logger))
+	http.Handle("/storage/upload", chain(http.HandlerFunc(svr.upload), svr.sb, svr.logger, svr.cors))
+	http.Handle("/_servefile_/", chain(http.HandlerFunc(svr.serveFile), svr.logger, svr.cors))
 
 	fmt.Printf("%s http://localhost:%v\n", clsecondary("Server started at:"), port)
 	fmt.Println(http.ListenAndServe(":"+port, nil))
@@ -727,6 +727,38 @@ func (svr *devserver) sb(next http.Handler) http.Handler {
 			return
 		}
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (svr *devserver) cors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headers := w.Header()
+		origin := r.Header.Get("Origin")
+
+		// Always set Vary headers
+		// see https://github.com/rs/cors/issues/10,
+		//     https://github.com/rs/cors/commit/dbdca4d95feaa7511a46e6f1efb3b3aa505bc43f#commitcomment-12352001
+		headers.Add("Vary", "Origin")
+		headers.Add("Vary", "Access-Control-Request-Method")
+		headers.Add("Vary", "Access-Control-Request-Headers")
+
+		if origin == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		headers.Set("Access-Control-Allow-Origin", origin)
+		// Spec says: Since the list of methods can be unbounded, simply returning the method indicated
+		// by Access-Control-Request-Method (if supported) can be enough
+		headers.Set("Access-Control-Allow-Methods", strings.ToUpper(r.Header.Get("Access-Control-Request-Method")))
+
+		headers.Set("Access-Control-Allow-Headers", r.Header.Get("Access-Control-Request-Headers"))
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
