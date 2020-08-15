@@ -1,4 +1,5 @@
-.demo-backend.yaml
+backend
+.backend.yml
 dist/
 
 # Binaries for programs and plugins
