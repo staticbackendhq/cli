@@ -121,7 +121,20 @@ func startServer(port string) {
 	http.Handle("/storage/upload", chain(http.HandlerFunc(svr.upload), svr.sb, svr.logger, svr.cors))
 	http.Handle("/_servefile_/", chain(http.HandlerFunc(svr.serveFile), svr.logger, svr.cors))
 
+	// we create an admin
+	users := make([]map[string]interface{}, 0)
+	newUser := make(map[string]interface{})
+	newUser["accountId"] = 1
+	newUser["userId"] = 1
+	newUser["email"] = "a@b.com"
+	newUser["password"] = "test123"
+	newUser["role"] = 100
+
+	users = append(users, newUser)
+	svr.db["sb_users"] = users
+
 	fmt.Printf("%s http://localhost:%v\n", clsecondary("Server started at:"), port)
+	fmt.Printf("%s: a@b.com with password test123\n", clsecondary("Your admin user is"))
 	fmt.Println(http.ListenAndServe(":"+port, nil))
 }
 
