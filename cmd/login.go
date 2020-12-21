@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -40,14 +39,8 @@ You have to authenticate to manipulate your StaticBackend data.
 We're saving your email/password in the .backend file, make sure to add it to your .gitignore file.
 	`, clbold(clsecondary("Login to your account"))),
 	Run: func(cmd *cobra.Command, args []string) {
-		pubKey := viper.GetString("pubKey")
-		if len(pubKey) == 0 {
-			fmt.Printf("%s\n", cldanger("cannot find pubKey in your .backend config file"))
-			fmt.Println("\nMake sure to get your StaticBackend public key and save it in a .backend YAML config file.")
-			fmt.Println("\nFor instance:\n")
-			fmt.Printf("\t%s: na1\n", clsecondary("region"))
-			fmt.Printf("\t%s: your-key-here\n", clsecondary("pubKey"))
-			fmt.Println("\nYou received your public key when you created your account via email.\n")
+		pubKey, ok := getPublicKey()
+		if !ok {
 			return
 		}
 

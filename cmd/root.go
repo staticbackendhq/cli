@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	VERSION = "v1.0.0-beta1"
+	// Version is the current version of the CLI
+	Version = "v1.0.0-rc"
 )
 
 var (
@@ -62,16 +63,16 @@ This CLI gives you the following functionalities:
 - Managing your backend resources: %s
 - Managing your account: %s
 	`,
-		clbold(clsecondary("StaticBackend CLI "+VERSION)),
+		clbold(clsecondary("StaticBackend CLI "+Version)),
 		clbold("backend server"),
-		clsecondary("soon"),
-		clsecondary("soon"),
+		clsecondary("database, form submissions"),
+		clsecondary("billing"),
 	),
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 		if cmd.Flag("version").Value.String() == "true" {
-			fmt.Println(VERSION)
+			fmt.Println(Version)
 		} else {
 			fmt.Println(cmd.Long)
 			fmt.Println("")
@@ -126,6 +127,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		//fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
 }

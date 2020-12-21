@@ -23,7 +23,7 @@ import (
 	"net/http"
 )
 
-const baseURL = "http://localhost:8099"
+const baseURL = "https://na1.staticbackend.com"
 
 func request(pubKey, token, method, path string, body io.Reader, v interface{}) error {
 	req, err := http.NewRequest(method, baseURL+path, body)

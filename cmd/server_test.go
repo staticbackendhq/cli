@@ -28,12 +28,37 @@ import (
 	"testing"
 )
 
+const (
+	adminToken  = "a@b.com"
+	memberToken = "test@unittest.com"
+)
+
 var svr *devserver
 
 func init() {
 	svr = &devserver{
 		db: make(map[string][]map[string]interface{}),
 	}
+
+	// create an admin user
+	users := make([]map[string]interface{}, 0)
+	newUser := make(map[string]interface{})
+	newUser["accountId"] = 1
+	newUser["userId"] = 1
+	newUser["email"] = adminToken
+	newUser["password"] = "test123"
+	newUser["role"] = 100
+
+	member := make(map[string]interface{})
+	member["accountId"] = 2
+	member["userId"] = 2
+	member["email"] = memberToken
+	member["password"] = "test123"
+	member["role"] = 0
+
+	users = append(users, newUser)
+	users = append(users, member)
+	svr.db["sb_users"] = users
 }
 
 func newRecorder(t *testing.T, method, url, typ string, body io.Reader, h http.HandlerFunc) *httptest.ResponseRecorder {
@@ -119,8 +144,10 @@ func TestDevServerDatabase(t *testing.T) {
 	if uRec.Code != http.StatusOK {
 		t.Errorf("[update] got status %d, expected %d", uRec.Code, http.StatusOK)
 	} else {
-		t.Log(doc)
-		tmp, err := svr.fetch("unittest", fmt.Sprintf("%v", doc["id"]), fmt.Sprintf("%v", doc["accountId"]))
+		cond := func(v map[string]interface{}) bool {
+			return v["accountId"] == fmt.Sprintf("%v", doc["accountId"])
+		}
+		tmp, err := svr.fetch("unittest", fmt.Sprintf("%v", doc["id"]), cond)
 		if err != nil {
 			t.Error(err)
 		} else if tmp["my"] != "updated value" {
@@ -140,6 +167,60 @@ func TestDevServerDatabase(t *testing.T) {
 		t.Errorf("[delete] got status %d, expected %d", dRec.Code, http.StatusOK)
 	} else if x := len(svr.db["unittest"]); x != 0 {
 		t.Errorf("[delete] table len %d, expected to be empty", x)
+	}
+}
+
+type permtest struct {
+	status int
+	action string
+	doc    map[string]interface{}
+}
+
+func TestDatabasePermission(t *testing.T) {
+	doc := strings.NewReader(`{"title": "sample document", "done": false}`)
+
+	// testing public repo
+	// public repo can be read from all, written from owner
+	rec := newAuthRecorder(t, "POST", "/db/pub_repo", "application/json", memberToken, doc, svr.database)
+
+	if rec.Code > 299 {
+		t.Fatalf("cannot add test document: %v", rec.Code)
+	}
+
+	eRec := newRecorder(t, "GET", "/db/pub_repo", "application/json", nil, svr.database)
+	if eRec.Code > 299 {
+		t.Fatalf("public user cannot read public repo: %v", eRec.Code)
+	}
+
+	wRec := newRecorder(t, "POST", "/db/pub_repo", "application/json", doc, svr.database)
+	if wRec.Code < 300 {
+		t.Fatal("public user could write on repo")
+	}
+
+	// testing auth can read, account can write
+	doc = strings.NewReader(`{"title": "sample document", "done": false}`)
+	rec = newAuthRecorder(t, "POST", "/db/repo_764_", "application/json", adminToken, doc, svr.database)
+
+	if rec.Code > 299 {
+		t.Fatalf("cannot add test document: %d %s", rec.Code, rec.Body.String())
+	}
+
+	eRec = newAuthRecorder(t, "GET", "/db/repo_764_", "application/json", memberToken, nil, svr.database)
+	if eRec.Code > 299 {
+		t.Fatalf("public user cannot read public repo: %v", eRec.Code)
+	}
+
+	wRec = newAuthRecorder(t, "PUT", "/db/repo_764_/1", "application/json", memberToken, doc, svr.database)
+	if wRec.Code < 300 {
+		t.Fatal("public user could write on repo")
+	}
+
+	doc = strings.NewReader(`{"title": "sample document", "done": true}`)
+	wRec = newAuthRecorder(t, "PUT", "/db/repo_764_/1", "application/json", adminToken, doc, svr.database)
+	if wRec.Code > 299 {
+		t.Fatal("public user could write on repo")
+	} else if strings.Index(wRec.Body.String(), "true") == -1 {
+		t.Errorf("expected to have true got %s", wRec.Body.String())
 	}
 }
 

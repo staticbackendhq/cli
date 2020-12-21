@@ -18,13 +18,14 @@ package core
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 // NewAccount initiates the account creation process.
 func NewAccount(email string) (string, error) {
 	var stripeURL string
 
-	path := fmt.Sprintf("/account/init?email=%s", email)
+	path := fmt.Sprintf("/account/init?email=%s", url.QueryEscape(email))
 	if err := request("", "", http.MethodGet, path, nil, &stripeURL); err != nil {
 		return "", err
 	}

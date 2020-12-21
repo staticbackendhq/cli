@@ -18,48 +18,44 @@ package cmd
 import (
 	"fmt"
 
-	"staticbackendhq/cli/core"
-
 	"github.com/spf13/cobra"
+	"github.com/staticbackendhq/backend-go"
 )
 
 // accountCreateCmd represents the accountCreate command
-var accountCreateCmd = &cobra.Command{
-	Use:   "create email",
-	Short: "Create a new account.",
+var accountPortalCmd = &cobra.Command{
+	Use:   "portal",
+	Short: "Retrieve a URL to manage your subscription and credit card.",
 	Long: fmt.Sprintf(`
 %s
 
-We require a credit card to create new account.
-
-No charges or subscription will be assigned to the account creation.
-
-You may pick a paid plan later when you're ready.
+Let you manage your billing account, change plan, update credit card and cancel.
 		`,
-		clbold(clsecondary("Create your account")),
+		clbold(clsecondary("Access your billing portal")),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("email"), cldanger("please supply an email."))
+		if setBackend() == false {
 			return
 		}
 
-		email := args[0]
-		stripeURL, err := core.NewAccount(email)
-		if err != nil {
+		tok, ok := getRookToken()
+		if !ok {
+			return
+		}
+
+		var link string
+		if err := backend.Get(tok, "/account/portal", &link); err != nil {
 			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
 			return
 		}
 
-		fmt.Printf("%s\n", clbold("Your account has been created and your 14-day trial is almost ready."))
-		fmt.Println("To complete your registration follow this link:")
-		fmt.Printf("%s\n", clbold(stripeURL))
-		fmt.Printf("\n\n%s\n", clsecondary("Your account will unlock once you add a payment method."))
+		fmt.Printf("%s\n", clsecondary("You may access your billing portal via this URL:"))
+		fmt.Println(link)
 	},
 }
 
 func init() {
-	accountCmd.AddCommand(accountCreateCmd)
+	accountCmd.AddCommand(accountPortalCmd)
 
 	// Here you will define your flags and configuration settings.
 

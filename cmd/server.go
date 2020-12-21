@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -115,6 +116,8 @@ func startServer(port string) {
 
 	http.Handle("/db/", chain(http.HandlerFunc(svr.database), svr.sb, svr.logger, svr.cors))
 	http.Handle("/query/", chain(http.HandlerFunc(svr.query), svr.sb, svr.logger, svr.cors))
+	http.Handle("/sudo/", chain(http.HandlerFunc(svr.database), svr.sb, svr.reqRoot, svr.logger, svr.cors))
+	http.Handle("/sudoquery/", chain(http.HandlerFunc(svr.query), svr.sb, svr.reqRoot, svr.logger, svr.cors))
 
 	http.Handle("/postform/", chain(http.HandlerFunc(svr.postForm), svr.sb, svr.logger, svr.cors))
 
@@ -163,6 +166,8 @@ func (svr *devserver) register(w http.ResponseWriter, r *http.Request) {
 		data["accountId"] = newID
 		data["userId"] = newID
 	}
+
+	data["role"] = 0
 
 	users = append(users, data)
 
@@ -264,6 +269,9 @@ func (svr *devserver) findUser(email interface{}) (map[string]interface{}, error
 func (svr *devserver) auth(w http.ResponseWriter, r *http.Request) map[string]interface{} {
 	key := r.Header.Get("Authorization")
 	if len(key) == 0 {
+		if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/db/pub_") {
+			return make(map[string]interface{})
+		}
 		http.Error(w, "need the Authorization HTTP header", http.StatusUnauthorized)
 		return nil
 	} else if strings.HasPrefix(key, "Bearer ") == false {
@@ -306,6 +314,7 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 		}
 		data["id"] = svr.nextID(col)
 		data["accountId"] = fmt.Sprintf("%v", user["accountId"])
+		data["ownerId"] = fmt.Sprintf("%v", user["userId"])
 
 		if err := svr.add(col, data); err != nil {
 			svr.respond(w, r, http.StatusInternalServerError, err)
@@ -327,6 +336,21 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 		data["id"] = id
 		data["accountId"] = fmt.Sprintf("%v", user["accountId"])
 
+		if svr.ensureAccess(col, id, user, writePermission) == false {
+			http.Error(w, "missing permission", http.StatusUnauthorized)
+			return
+		}
+
+		orig, err := svr.fetch(col, id, func(v map[string]interface{}) bool {
+			return true
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		data["ownerId"] = orig["ownerId"]
+
 		if err := svr.update(col, data); err != nil {
 			svr.respond(w, r, http.StatusInternalServerError, err)
 			return
@@ -339,6 +363,12 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		fmt.Println(col, id, user)
+		if svr.ensureAccess(col, id, user, writePermission) == false {
+			http.Error(w, "missing permission", http.StatusUnauthorized)
+			return
+		}
+
 		count, err := svr.del(col, id, fmt.Sprintf("%v", user["accountId"]))
 		if err != nil {
 			svr.respond(w, r, http.StatusInternalServerError, err)
@@ -348,7 +378,12 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == http.MethodGet {
 		id, _ := svr.shiftPath(r.URL.Path)
 		if len(id) > 0 {
-			rec, err := svr.fetch(col, id, user["accountId"])
+			if svr.ensureAccess(col, id, user, readPermission) == false {
+				http.Error(w, "missing permission", http.StatusUnauthorized)
+				return
+			}
+
+			rec, err := svr.fetch(col, id, func(v map[string]interface{}) bool { return true })
 			if err != nil {
 				svr.respond(w, r, http.StatusInternalServerError, err)
 				return
@@ -358,7 +393,7 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 		}
 
 		page, size := svr.getPagination(r.URL)
-		list, total, err := svr.list(col, user["accountId"], page, size)
+		list, total, err := svr.list(col, user, page, size)
 		if err != nil {
 			svr.respond(w, r, http.StatusInternalServerError, err)
 			return
@@ -435,9 +470,10 @@ func (svr *devserver) del(col string, id string, accountId interface{}) (int, er
 	return len(list) - len(newList), nil
 }
 
-func (svr *devserver) fetch(col, id string, accountID interface{}) (map[string]interface{}, error) {
+func (svr *devserver) fetch(col, id string, cond func(doc map[string]interface{}) bool) (map[string]interface{}, error) {
 	list, ok := svr.db[col]
 	if !ok {
+		fmt.Println("no repo")
 		return nil, fmt.Errorf("your table %s is empty", col)
 	}
 
@@ -445,13 +481,19 @@ func (svr *devserver) fetch(col, id string, accountID interface{}) (map[string]i
 		if v["id"] == id {
 			if strings.HasPrefix(col, "pub_") {
 				return v, nil
-			} else if v["accountId"] == fmt.Sprintf("%v", accountID) {
+			} else if col == "sb_files" {
+				// file are public by default
 				return v, nil
+			} else if found := cond(v); found {
+				return v, nil
+			} else {
+				fmt.Println("not found")
+				fmt.Println(v)
 			}
 		}
 	}
 
-	return nil, fmt.Errorf("could not find this id %s in the table %s.", id, col)
+	return nil, fmt.Errorf("could not find this id %s in the table %s", id, col)
 
 }
 
@@ -582,30 +624,43 @@ func (svr *devserver) getPagination(u *url.URL) (page int64, size int64) {
 	return
 }
 
-func (svr *devserver) list(col string, accountID interface{}, page, size int64) ([]map[string]interface{}, int64, error) {
+func (svr *devserver) list(col string, user map[string]interface{}, page, size int64) ([]map[string]interface{}, int64, error) {
 	list, ok := svr.db[col]
 	if !ok {
 		return nil, 0, fmt.Errorf("table %s does not exists", col)
 	}
 
-	byAccount := make([]map[string]interface{}, 0)
+	filtered := make([]map[string]interface{}, 0)
+
 	// if it's a public repo
-	if strings.HasPrefix(col, "pub_") {
-		byAccount = list
+	if strings.HasPrefix(col, "pub_") || user["role"] == 100 {
+		filtered = list
 	} else {
+		rpl := readPermission(col)
 		for _, rec := range list {
-			if rec["accountId"] == fmt.Sprintf("%v", accountID) {
-				byAccount = append(byAccount, rec)
+			switch rpl {
+			case permGroup:
+				if rec["accountId"] == fmt.Sprintf("%v", user["accountId"]) {
+					filtered = append(filtered, rec)
+				}
+			case permOwner:
+				if rec["accountId"] == fmt.Sprintf("%v", user["accountId"]) &&
+					rec["ownerId"] == fmt.Sprintf("%v", user["userId"]) {
+					filtered = append(filtered, rec)
+				}
+			default:
+				// everyone can read based on the permission level
+				filtered = append(filtered, rec)
 			}
 		}
 	}
 
-	sort.Sort(byID(byAccount))
+	sort.Sort(byID(filtered))
 
 	skips := size * (page - 1)
 
 	paged := make([]map[string]interface{}, 0)
-	for idx, rec := range byAccount {
+	for idx, rec := range filtered {
 		if int64(idx) < skips {
 			continue
 		} else if int64(idx)-skips > size {
@@ -615,7 +670,7 @@ func (svr *devserver) list(col string, accountID interface{}, page, size int64) 
 		paged = append(paged, rec)
 	}
 
-	return paged, int64(len(byAccount)), nil
+	return paged, int64(len(filtered)), nil
 }
 
 type querycompare struct {
@@ -744,6 +799,31 @@ func (svr *devserver) sb(next http.Handler) http.Handler {
 	})
 }
 
+func (svr *devserver) reqRoot(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		key := r.Header.Get("Authorization")
+		if len(key) == 0 {
+			http.Error(w, "need the Authorization HTTP header", http.StatusUnauthorized)
+			return
+		} else if strings.HasPrefix(key, "Bearer ") == false {
+			http.Error(w, "need the Authorization HTTP header to be 'Bearer [root-token]'", http.StatusUnauthorized)
+			return
+		}
+
+		email := strings.Replace(key, "Bearer ", "", -1)
+		user, err := svr.findUser(email)
+		if err != nil {
+			http.Error(w, "unable to find this token, make sure the user has register first.", http.StatusUnauthorized)
+			return
+		} else if user["role"] != 100 {
+			http.Error(w, "user missing permission", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (svr *devserver) cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		headers := w.Header()
@@ -774,4 +854,116 @@ func (svr *devserver) cors(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+type permissionLevel int
+
+const (
+	permOwner permissionLevel = iota
+	permGroup
+	permEveryone
+)
+
+func getPermission(repo string) (owner string, group string, everyone string) {
+	// default permission
+	owner, group, everyone = "7", "4", "0"
+
+	re := regexp.MustCompile(`_\d\d\d_$`)
+	if re.MatchString(repo) == false {
+		return
+	}
+
+	results := re.FindAllString(repo, -1)
+	if len(results) != 1 {
+		return
+	}
+
+	perm := strings.Replace(results[0], "_", "", -1)
+
+	if len(perm) != 3 {
+		return
+	}
+
+	owner = string(perm[0])
+	group = string(perm[1])
+	everyone = string(perm[2])
+	return
+}
+
+func writePermission(repo string) permissionLevel {
+	_, g, e := getPermission(repo)
+
+	if canWrite(e) {
+		return permEveryone
+	}
+	if canWrite(g) {
+		return permGroup
+	}
+	return permOwner
+}
+
+func readPermission(repo string) permissionLevel {
+	if strings.HasPrefix(repo, "pub_") {
+		return permEveryone
+	}
+
+	_, g, e := getPermission(repo)
+
+	if canRead(e) {
+		return permEveryone
+	}
+	if canRead(g) {
+		return permGroup
+	}
+	return permOwner
+}
+
+func canWrite(s string) bool {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return false
+	}
+	return uint8(i)&uint8(2) != 0
+}
+
+func canRead(s string) bool {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return uint8(i)&uint8(4) != 0
+}
+
+func (svr *devserver) ensureAccess(repo, id string, user map[string]interface{}, p func(repo string) permissionLevel) bool {
+	if user["role"] == 100 {
+		return true
+	}
+
+	cond := func(v map[string]interface{}) bool {
+		return true
+	}
+
+	switch p(repo) {
+	case permGroup:
+		cond = func(v map[string]interface{}) bool {
+			a1 := fmt.Sprintf("%v", v["accountId"])
+			a2 := fmt.Sprintf("%v", user["accountId"])
+			return a1 == a2
+		}
+	case permOwner:
+		cond = func(v map[string]interface{}) bool {
+			a1 := fmt.Sprintf("%v", v["accountId"])
+			a2 := fmt.Sprintf("%v", user["accountId"])
+			o1 := fmt.Sprintf("%v", v["ownerId"])
+			o2 := fmt.Sprintf("%v", user["userId"])
+			return a1 == a2 && o1 == o2
+		}
+	}
+
+	if _, err := svr.fetch(repo, id, cond); err != nil {
+		fmt.Println("fetch err: ", err)
+		return false
+	}
+
+	return true
 }
