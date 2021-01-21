@@ -43,7 +43,7 @@ Otherwise, the latest 100 submissions across all your forms will be displayed.
 			return
 		}
 
-		tok, ok := getRookToken()
+		tok, ok := getRootToken()
 		if !ok {
 			return
 		}

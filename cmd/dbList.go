@@ -40,7 +40,7 @@ You may view documents from first to last or last to first.
 			return
 		}
 
-		tok, ok := getRookToken()
+		tok, ok := getRootToken()
 		if !ok {
 			return
 		}

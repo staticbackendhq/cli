@@ -60,7 +60,7 @@ Supported operators:
 			return
 		}
 
-		tok, ok := getRookToken()
+		tok, ok := getRootToken()
 		if !ok {
 			return
 		}

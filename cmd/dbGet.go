@@ -39,7 +39,7 @@ Retrieve a specific document by its id from a repository.
 			return
 		}
 
-		tok, ok := getRookToken()
+		tok, ok := getRootToken()
 		if !ok {
 			return
 		}

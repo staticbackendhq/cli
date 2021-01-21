@@ -31,6 +31,8 @@ import (
 	"strings"
 	"time"
 
+	"staticbackendhq/cli/ws"
+
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 )
@@ -123,6 +125,14 @@ func startServer(port string) {
 
 	http.Handle("/storage/upload", chain(http.HandlerFunc(svr.upload), svr.sb, svr.logger, svr.cors))
 	http.Handle("/_servefile_/", chain(http.HandlerFunc(svr.serveFile), svr.logger, svr.cors))
+
+	// WebSocket
+	hub := ws.NewHub(svr.findUser)
+	go hub.Run()
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		ws.ServeWs(hub, w, r)
+	})
 
 	// we create an admin
 	users := make([]map[string]interface{}, 0)
@@ -437,7 +447,7 @@ func (svr *devserver) update(col string, data map[string]interface{}) error {
 	}
 
 	for idx, v := range list {
-		if v["id"] == data["id"] && v["accountId"] == data["accountId"] {
+		if v["id"] == data["id"] {
 			list[idx] = data
 			svr.db[col] = list
 			return nil
@@ -730,12 +740,34 @@ func (svr *devserver) query(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.HasPrefix(col, "pub_") == false {
-		filter["accountId"] = querycompare{op: "=", val: fmt.Sprintf("%v", user["accountId"])}
+		filtered := make([]map[string]interface{}, 0)
+
+		rpl := readPermission(col)
+		for _, rec := range list {
+			switch rpl {
+			case permGroup:
+				if rec["accountId"] == fmt.Sprintf("%v", user["accountId"]) {
+					filtered = append(filtered, rec)
+				}
+			case permOwner:
+				if rec["accountId"] == fmt.Sprintf("%v", user["accountId"]) &&
+					rec["ownerId"] == fmt.Sprintf("%v", user["userId"]) {
+					filtered = append(filtered, rec)
+				}
+			default:
+				// everyone can read based on the permission level
+				filtered = append(filtered, rec)
+			}
+		}
+
+		list = filtered
 	}
 
 	page, size := svr.getPagination(r.URL)
 
 	skips := size * (page - 1)
+
+	fmt.Println("skips", skips, "size", size)
 
 	result := PagedResult{
 		Page: page,
@@ -748,12 +780,12 @@ func (svr *devserver) query(w http.ResponseWriter, r *http.Request) {
 		valid = true
 		for k, v := range filter {
 			if v.op == "=" {
-				if rec[k] != v.val {
+				if fmt.Sprintf("%v", rec[k]) != fmt.Sprintf("%v", v.val) {
 					valid = false
 					break
 				}
 			} else if v.op == "!" {
-				if rec[k] == v.val {
+				if fmt.Sprintf("%v", rec[k]) == fmt.Sprintf("%v", v.val) {
 					valid = false
 					break
 				}

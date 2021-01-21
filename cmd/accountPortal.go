@@ -38,7 +38,7 @@ Let you manage your billing account, change plan, update credit card and cancel.
 			return
 		}
 
-		tok, ok := getRookToken()
+		tok, ok := getRootToken()
 		if !ok {
 			return
 		}

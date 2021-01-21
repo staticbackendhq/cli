@@ -39,7 +39,7 @@ func getPublicKey() (pubKey string, ok bool) {
 	return
 }
 
-func getRookToken() (tok string, ok bool) {
+func getRootToken() (tok string, ok bool) {
 	tok = viper.GetString("rootToken")
 	if len(tok) == 0 {
 		fmt.Printf("%s\n", cldanger("cannot find rootToken in your .backend config file"))
