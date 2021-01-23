@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -47,6 +48,7 @@ type Socket struct {
 
 func (c *Socket) readPump() {
 	defer func() {
+		fmt.Println("DEBUG: readPump unregister")
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
@@ -61,6 +63,8 @@ func (c *Socket) readPump() {
 			}
 			break
 		}
+
+		fmt.Println("DEBUB: broadcasting", msg.Type)
 		c.hub.broadcast <- msg
 	}
 }
@@ -68,6 +72,7 @@ func (c *Socket) readPump() {
 func (c *Socket) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		fmt.Println("DEBUG: writePump timeout for ping/pong")
 		ticker.Stop()
 		c.conn.Close()
 	}()
@@ -81,7 +86,9 @@ func (c *Socket) writePump() {
 				return
 			}
 
-			c.conn.WriteJSON(msg)
+			if err := c.conn.WriteJSON(msg); err != nil {
+				fmt.Println("DEBUG: error writing to socket", err)
+			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -93,6 +100,8 @@ func (c *Socket) writePump() {
 
 // serveWs handles websocket requests from the peer.
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("DEBUG: new WebSocket connection")
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -105,6 +114,7 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	sck := &Socket{hub: hub, conn: conn, send: make(chan Command), id: id.String()}
 	sck.hub.register <- sck
 
+	fmt.Println("start reader/writer for WS")
 	go sck.writePump()
 	go sck.readPump()
 }

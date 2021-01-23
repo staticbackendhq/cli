@@ -66,6 +66,7 @@ func (h *Hub) Run() {
 				select {
 				case sck.send <- p:
 				default:
+					fmt.Println("connection closed: broadcast, target socket closed")
 					h.unsub(sck)
 					close(sck.send)
 					delete(h.ids, msg.SID)
@@ -93,8 +94,11 @@ const (
 )
 
 func (h *Hub) getTargets(msg Command) (sockets []*Socket, payload Command) {
+	fmt.Println("recv", msg)
+
 	sender, ok := h.ids[msg.SID]
 	if !ok {
+		fmt.Println("cannot find sender socket")
 		return
 	}
 
@@ -198,6 +202,8 @@ func (msg Command) IsDBEvent() bool {
 
 // Publish sends a message to all socket in that channel
 func (h *Hub) Publish(msg Command, channel string) {
+	msg.Type = MsgTypeChanOut
+
 	members, ok := h.subscriptions[channel]
 	if !ok {
 		return
@@ -212,6 +218,7 @@ func (h *Hub) Publish(msg Command, channel string) {
 		select {
 		case sck.send <- msg:
 		default:
+			fmt.Println("again that shit, socket is closed")
 			h.unsub(sck)
 			close(sck.send)
 			delete(h.ids, msg.SID)

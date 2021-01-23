@@ -31,6 +31,7 @@ import (
 	"strings"
 	"time"
 
+	"staticbackendhq/cli/realtime"
 	"staticbackendhq/cli/ws"
 
 	"github.com/gookit/color"
@@ -95,7 +96,8 @@ func init() {
 }
 
 type devserver struct {
-	db map[string][]map[string]interface{}
+	db     map[string][]map[string]interface{}
+	broker *realtime.Broker
 }
 
 type chainer func(h http.Handler) http.Handler
@@ -112,6 +114,11 @@ func startServer(port string) {
 	svr := &devserver{
 		db: make(map[string][]map[string]interface{}),
 	}
+
+	// Start the Server Sent Event broker
+	b := realtime.NewBroker(svr.findUser)
+
+	svr.broker = b
 
 	http.Handle("/register", chain(http.HandlerFunc(svr.register), svr.sb, svr.logger, svr.cors))
 	http.Handle("/login", chain(http.HandlerFunc(svr.login), svr.sb, svr.logger, svr.cors))
@@ -133,6 +140,9 @@ func startServer(port string) {
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws.ServeWs(hub, w, r)
 	})
+
+	http.Handle("/sse/connect", chain(http.HandlerFunc(b.Accept), svr.logger, svr.cors))
+	http.Handle("/sse/msg", chain(http.HandlerFunc(svr.message), svr.sb, svr.logger, svr.cors))
 
 	// we create an admin
 	users := make([]map[string]interface{}, 0)
@@ -330,6 +340,8 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 			svr.respond(w, r, http.StatusInternalServerError, err)
 			return
 		}
+
+		go svr.dbNotify(col, realtime.MsgTypeDBCreated, data)
 		svr.respond(w, r, http.StatusCreated, data)
 	} else if r.Method == http.MethodPut {
 		id, _ := svr.shiftPath(r.URL.Path)
@@ -365,6 +377,8 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 			svr.respond(w, r, http.StatusInternalServerError, err)
 			return
 		}
+
+		go svr.dbNotify(col, realtime.MsgTypeDBUpdated, data)
 		svr.respond(w, r, http.StatusOK, true)
 	} else if r.Method == http.MethodDelete {
 		id, _ := svr.shiftPath(r.URL.Path)
@@ -384,6 +398,8 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 			svr.respond(w, r, http.StatusInternalServerError, err)
 			return
 		}
+
+		go svr.dbNotify(col, realtime.MsgTypeDBDeleted, id)
 		svr.respond(w, r, http.StatusOK, count)
 	} else if r.Method == http.MethodGet {
 		id, _ := svr.shiftPath(r.URL.Path)
@@ -417,6 +433,35 @@ func (svr *devserver) database(w http.ResponseWriter, r *http.Request) {
 		}
 		svr.respond(w, r, http.StatusOK, result)
 	}
+}
+
+func (svr *devserver) dbNotify(col, typ string, v interface{}) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		fmt.Println("database notify: error converting to JSON", err)
+		return
+	}
+
+	msg := realtime.Command{
+		SID:     realtime.SystemID,
+		Type:    typ,
+		Data:    string(b),
+		Channel: fmt.Sprintf("db-%s", col),
+	}
+
+	svr.broker.Publish(msg, msg.Channel)
+}
+
+func (svr *devserver) message(w http.ResponseWriter, r *http.Request) {
+	var msg realtime.Command
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	svr.broker.Broadcast <- msg
+
+	svr.respond(w, r, http.StatusOK, true)
 }
 
 func (svr *devserver) shiftPath(p string) (head, tail string) {
@@ -766,8 +811,6 @@ func (svr *devserver) query(w http.ResponseWriter, r *http.Request) {
 	page, size := svr.getPagination(r.URL)
 
 	skips := size * (page - 1)
-
-	fmt.Println("skips", skips, "size", size)
 
 	result := PagedResult{
 		Page: page,
