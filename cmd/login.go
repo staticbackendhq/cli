@@ -1,29 +1,13 @@
-/*
-Copyright © 2020 Focus Centric inc. <dominicstpierre@gmail.com>
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
 package cmd
 
 import (
 	"bufio"
 	"fmt"
 	"os"
-	"staticbackendhq/cli/core"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/staticbackendhq/backend-go"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -39,8 +23,7 @@ You have to authenticate to manipulate your StaticBackend data.
 We're saving your email/password in the .backend file, make sure to add it to your .gitignore file.
 	`, clbold(clsecondary("Login to your account"))),
 	Run: func(cmd *cobra.Command, args []string) {
-		pubKey, ok := getPublicKey()
-		if !ok {
+		if ok := setBackend(); !ok {
 			return
 		}
 
@@ -61,7 +44,7 @@ We're saving your email/password in the .backend file, make sure to add it to yo
 			return
 		}
 
-		tok, err := core.Login(pubKey, email, string(pw))
+		tok, err := backend.Login(email, string(pw))
 		if err != nil {
 			fmt.Printf("%s: %v\n", cldanger("an error occured"), err)
 			return
