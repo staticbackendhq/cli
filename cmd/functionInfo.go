@@ -66,8 +66,8 @@ function code.
 			end = 0
 		}
 		if start > 0 {
-			for i := start; i >= end; i-- {
-				run := fn.History[i]
+			for i := start; i > end; i-- {
+				run := fn.History[i-1]
 				fmt.Printf("%s:%d | %s:%s | %s:%v\n",
 					clsecondary("version"),
 					run.Version,
