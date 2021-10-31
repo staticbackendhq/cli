@@ -610,7 +610,14 @@ func (svr *devserver) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svr.respond(w, r, http.StatusOK, fmt.Sprintf("/_servefile_/%v", rec["id"]))
+	var data = new(struct {
+		ID  string `json:"id"`
+		URL string `json:"url"`
+	})
+	data.ID = id
+	data.URL = fmt.Sprintf("/_servefile_/%v", rec["id"])
+
+	svr.respond(w, r, http.StatusOK, data)
 }
 
 func (svr *devserver) serveFile(w http.ResponseWriter, r *http.Request) {
