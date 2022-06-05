@@ -1,6 +1,6 @@
 package main
 
-import "staticbackendhq/cli/cmd"
+import "github.com/staticbackendhq/cli/cmd"
 
 func main() {
 	cmd.Execute()

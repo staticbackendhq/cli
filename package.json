@@ -1,0 +1,31 @@
+{
+	"name": "@staticbackend/cli",
+	"version": "1.4.1",
+	"description": "StaticBackend's CLI including local dev server",
+	"main": "index.js",
+	"scripts": {
+		"postinstall": "node postinstall.js install",
+		"preuninstall": "node postinstall.js uninstall"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/staticbackendhq/cli.git"
+	},
+	"author": "Focus Centric inc.",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/staticbackendhq/cli/issues"
+	},
+	"goBinary": {
+		"name": "backend",
+		"path": "./bin"
+	},
+	"homepage": "https://github.com/staticbackendhq/cli#readme",
+	"files": [
+		"dist",
+		"postinstall.js"
+	],
+	"dependencies": {
+		"mkdirp": "^1.0.4"
+	}
+}
