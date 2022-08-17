@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
@@ -95,8 +96,14 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Find home directory.
+		// add current working directory
 		pwd, err := os.Getwd()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		confDir, err := os.UserConfigDir()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -104,6 +111,7 @@ func initConfig() {
 
 		// Search config in home directory with name ".cli" (without extension).
 		viper.AddConfigPath(pwd)
+		viper.AddConfigPath(path.Join(confDir, "backend"))
 		viper.SetConfigName(".backend")
 	}
 

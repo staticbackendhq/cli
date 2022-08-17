@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	staticbackend "github.com/staticbackendhq/core"
+	sbconfig "github.com/staticbackendhq/core/config"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
@@ -23,20 +23,6 @@ const (
 var (
 	verbose bool
 )
-
-func init() {
-	// initialize minimum env variables
-	//TODO: find another way to provide config to server
-	os.Setenv("SB_FROM_CLI", "yes")
-	os.Setenv("APP_ENV", "dev")
-	os.Setenv("DATA_STORE", "mem")
-	os.Setenv("JWT_SECRET", "fromcli")
-	os.Setenv("MAIL_PROVIDER", "dev")
-	os.Setenv("STORAGE_PROVIDER", "local")
-	os.Setenv("FROM_EMAIL", "you@cli.com")
-	os.Setenv("FROM_NAME", "from cli")
-	os.Setenv("LOCAL_STORAGE_URL", "http://localhost:8099")
-}
 
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
@@ -71,7 +57,15 @@ There are some limitations that you can learn more about here.
 		)
 		go createCustomer(uri, f.Value.String())
 
-		staticbackend.Start("mem", f.Value.String())
+		c := sbconfig.AppConfig{
+			FromCLI:         "yes",
+			Port:            f.Value.String(),
+			DatabaseURL:     "mem",
+			DataStore:       "mem",
+			LocalStorageURL: "http://localhost:8099",
+		}
+
+		staticbackend.Start(c)
 	},
 }
 
