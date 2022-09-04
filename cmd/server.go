@@ -7,6 +7,7 @@ import (
 
 	staticbackend "github.com/staticbackendhq/core"
 	sbconfig "github.com/staticbackendhq/core/config"
+	"github.com/staticbackendhq/core/logger"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
@@ -58,6 +59,7 @@ There are some limitations that you can learn more about here.
 		go createCustomer(uri, f.Value.String())
 
 		c := sbconfig.AppConfig{
+			AppEnv:          "dev",
 			FromCLI:         "yes",
 			Port:            f.Value.String(),
 			DatabaseURL:     "mem",
@@ -65,7 +67,9 @@ There are some limitations that you can learn more about here.
 			LocalStorageURL: "http://localhost:8099",
 		}
 
-		staticbackend.Start(c)
+		log := logger.Get(c)
+
+		staticbackend.Start(c, log)
 	},
 }
 

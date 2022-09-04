@@ -1,6 +1,6 @@
 {
 	"name": "@staticbackend/cli",
-	"version": "1.4.1",
+	"version": "1.4.2",
 	"description": "StaticBackend's CLI including local dev server",
 	"main": "index.js",
 	"scripts": {
