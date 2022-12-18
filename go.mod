@@ -9,7 +9,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
 	github.com/staticbackendhq/backend-go v1.4.0
-	github.com/staticbackendhq/core v1.4.0
+	github.com/staticbackendhq/core v1.4.3
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 )
 

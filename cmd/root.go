@@ -12,7 +12,7 @@ import (
 
 const (
 	// Version is the current version of the CLI
-	Version = "v1.4.0"
+	Version = "v1.4.3"
 )
 
 var (
@@ -47,6 +47,10 @@ This CLI gives you the following functionalities:
 - A local development server: %s
 - Managing your backend resources: %s
 - Managing your account: %s
+
+Use "backend server" to start your local dev server.
+
+Use "backend login --dev" to automatically configure for local dev.
 	`,
 		clbold(clsecondary("StaticBackend CLI "+Version)),
 		clbold("backend server"),

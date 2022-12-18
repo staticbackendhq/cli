@@ -43,7 +43,7 @@ $> backend db create tasks "{ name: \"task 1\", assign: \"dominic\", done: false
 
 		var doc map[string]interface{}
 
-		if err := json.Unmarshal([]byte(raw), &raw); err != nil {
+		if err := json.Unmarshal([]byte(raw), &doc); err != nil {
 			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
 			return
 		}

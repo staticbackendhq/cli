@@ -10,12 +10,13 @@ import (
 func getPublicKey() (pubKey string, ok bool) {
 	pubKey = viper.GetString("pubKey")
 	if len(pubKey) == 0 {
-		fmt.Printf("%s\n", cldanger("cannot find pubKey in your .backend config file"))
-		fmt.Println("\nMake sure to get your StaticBackend public key and save it in a .backend YAML config file.")
+		fmt.Printf("%s\n", cldanger("cannot find pubKey in your .backend.yml config file"))
+		fmt.Println("\nMake sure to get your StaticBackend public key and save it in a .backend.yml YAML config file.")
 		fmt.Println("\nFor instance:")
 		fmt.Printf("\n\t%s: na1", clsecondary("region"))
 		fmt.Printf("\n\t%s: your-key-here", clsecondary("pubKey"))
 		fmt.Println("\nYou received your public key when you created your account via email.")
+		fmt.Printf("\n%s", clbold("use \"backend login --dev\" to work with the development server.\n\n"))
 		return
 	}
 
@@ -50,7 +51,7 @@ func setBackend() bool {
 
 	region := viper.GetString("region")
 	if len(region) == 0 {
-		region = "na1"
+		region = "dev"
 	}
 
 	backend.Region = region
