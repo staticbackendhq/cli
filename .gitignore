@@ -1,3 +1,6 @@
+*.fts
+*.db
+
 backend
 .backend.yml
 dist/
