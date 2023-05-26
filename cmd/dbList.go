@@ -20,7 +20,7 @@ You may view documents from first to last or last to first.
 		clbold(clsecondary("List documents from a repository")),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		if setBackend() == false {
+		if !setBackend() {
 			return
 		}
 

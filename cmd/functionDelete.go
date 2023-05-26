@@ -38,7 +38,7 @@ This will delete the function permanently, including all of its run history.
 			return
 		}
 
-		fmt.Printf("%s: the function %s has been deleted\n", clsuccess("success"))
+		fmt.Printf("%s: the function %s has been deleted\n", clsuccess("success"), args[0])
 	},
 }
 

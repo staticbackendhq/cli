@@ -80,7 +80,7 @@ We support two type of triggers at this moment:
 			return
 		}
 
-		fmt.Println("%s: %s", clgreen("Function updated successfully"), clbold(name))
+		fmt.Printf("%s: %s\n", clgreen("Function updated successfully"), clbold(name))
 		if trigger == "web" {
 			fmt.Printf("%s: %s\n", clsecondary("Function URL"), clbold("[your_domain]/fn/exec/"+name))
 		} else {

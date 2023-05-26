@@ -54,7 +54,7 @@ Use "backend login --dev" to automatically configure for local dev.
 	`,
 		clbold(clsecondary("StaticBackend CLI "+Version)),
 		clbold("backend server"),
-		clsecondary("database, form submissions"),
+		clsecondary("db, function, form, etc"),
 		clsecondary("billing"),
 	),
 	// Uncomment the following line if your bare application
@@ -65,7 +65,9 @@ Use "backend login --dev" to automatically configure for local dev.
 		} else {
 			fmt.Println(cmd.Long)
 			fmt.Println("")
-			cmd.Usage()
+			if err := cmd.Usage(); err != nil {
+				fmt.Println(err)
+			}
 		}
 	},
 }
@@ -122,7 +124,7 @@ func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		//fmt.Println("Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Printf("===\n%s: %v\n===\n\n", clwarning("No config file used"), err)
 	}
 }

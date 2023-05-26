@@ -73,7 +73,7 @@ You may create server-side functions that execute based on those triggers:
 			return
 		}
 
-		fmt.Println("%s: %s", clgreen("Function created successfully"), clbold(name))
+		fmt.Printf("%s: %s\n", clgreen("Function created successfully"), clbold(name))
 		if trigger == "web" {
 			fmt.Printf("%s: %s\n", clsecondary("Function URL"), clbold("[your_domain]/fn/exec/"+name))
 		} else {

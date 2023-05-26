@@ -22,7 +22,7 @@ $> backend db create tasks "{ name: \"task 1\", assign: \"dominic\", done: false
 		clbold(clsecondary("Create document")),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		if setBackend() == false {
+		if !setBackend() {
 			return
 		}
 

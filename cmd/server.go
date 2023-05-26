@@ -13,18 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ctxvalue int
-
-const (
-	ctxStatus ctxvalue = iota
-	ctxStart
-	ctxPath
-)
-
-var (
-	verbose bool
-)
-
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
@@ -49,13 +37,14 @@ There are some limitations that you can learn more about here.
 			color.Disable()
 		}
 
-		verbose = cmd.Flag("no-log").Value.String() == "false"
 		f := cmd.Flag("port")
+		persistData := cmd.Flag("persist-data").Value.String() == "true"
 
 		uri := fmt.Sprintf(
 			"http://localhost:%s/account/init?email=admin@dev.com&mem=1",
 			f.Value.String(),
 		)
+
 		go createCustomer(uri, f.Value.String())
 
 		c := sbconfig.AppConfig{
@@ -64,7 +53,13 @@ There are some limitations that you can learn more about here.
 			Port:            f.Value.String(),
 			DatabaseURL:     "mem",
 			DataStore:       "mem",
+			RedisHost:       "mem",
 			LocalStorageURL: "http://localhost:8099",
+		}
+
+		if persistData {
+			c.DatabaseURL = "local.db"
+			c.DataStore = "sqlite"
 		}
 
 		log := logger.Get(c)
@@ -86,12 +81,13 @@ func init() {
 	// is called directly, e.g.:
 	serverCmd.Flags().Int32P("port", "p", 8099, "dev server port")
 	serverCmd.Flags().Bool("no-log", false, "prevents printing requests/responses info")
+	serverCmd.Flags().Bool("persist-data", false, "persists data across usage")
 }
 
 func createCustomer(uri, port string) {
 	fmt.Printf("%s: %s\n\n", clsecondary("server started at"), clbold("http://localhost:"+port))
 
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {

@@ -19,7 +19,7 @@ Let you manage your billing account, change plan, update credit card and cancel.
 		clbold(clsecondary("Access your billing portal")),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		if setBackend() == false {
+		if !setBackend() {
 			return
 		}
 

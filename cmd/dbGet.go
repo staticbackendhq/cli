@@ -19,7 +19,7 @@ Retrieve a specific document by its id from a repository.
 		clbold(clsecondary("Get a document by id")),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		if setBackend() == false {
+		if !setBackend() {
 			return
 		}
 
