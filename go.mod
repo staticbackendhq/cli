@@ -7,7 +7,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.7.0
 	github.com/staticbackendhq/backend-go v1.4.0
-	github.com/staticbackendhq/core v1.5.0-alpha
+	github.com/staticbackendhq/core v1.5.0-alpha.3
 )
 
 require (
