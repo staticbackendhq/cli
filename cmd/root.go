@@ -12,7 +12,7 @@ import (
 
 const (
 	// Version is the current version of the CLI
-	Version = "v1.4.3"
+	Version = "v1.5.0"
 )
 
 var (
