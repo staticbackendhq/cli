@@ -55,6 +55,7 @@ There are some limitations that you can learn more about here.
 			DataStore:       "mem",
 			RedisHost:       "mem",
 			LocalStorageURL: "http://localhost:8099",
+			ActivateFlag:    "no-stripe-test-flag",
 		}
 
 		if persistData {
