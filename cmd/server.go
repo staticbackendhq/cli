@@ -30,7 +30,7 @@ There are some limitations that you can learn more about here.
 %s
 	`,
 		clbold(clsecondary("StatickBackend development server")),
-		clnote("https://staticbackend.com/cli"),
+		clnote("https://staticbackend.dev/cli"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		if cmd.Flag("no-color").Value.String() == "true" {

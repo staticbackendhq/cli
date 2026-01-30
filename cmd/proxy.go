@@ -57,7 +57,7 @@ func startProxy(port string) {
 		os.Exit(1)
 	}
 
-	proxyTarget = fmt.Sprintf("https://%s.staticbackend.com", region)
+	proxyTarget = fmt.Sprintf("https://%s.staticbackend.dev", region)
 
 	http.HandleFunc("/", proxy)
 
@@ -74,10 +74,10 @@ func proxy(w http.ResponseWriter, r *http.Request) {
 	proxy := httputil.NewSingleHostReverseProxy(t)
 
 	// Update the headers to allow for SSL redirection
-	r.URL.Host = "na1.staticbackend.com"
+	r.URL.Host = "na1.staticbackend.dev"
 	r.URL.Scheme = "https"
 	r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
-	r.Host = "na1.staticbackend.com"
+	r.Host = "na1.staticbackend.dev"
 
 	// Note that ServeHttp is non blocking and uses a go routine under the hood
 	proxy.ServeHTTP(w, r)
