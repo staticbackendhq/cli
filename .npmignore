@@ -1,0 +1,11 @@
+# Development files
+.github/
+dist/
+*.go
+go.mod
+go.sum
+.git/
+.gitignore
+
+# Only include what's needed for npm
+# The package.json "files" field controls what's included

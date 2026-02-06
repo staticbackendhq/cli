@@ -1,0 +1,151 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Remove replace directive from go.mod
+        run: |
+          sed -i '/replace github.com\/staticbackendhq\/core => ..\/core/d' go.mod
+          cat go.mod
+
+      - name: Build binaries for all platforms
+        run: |
+          mkdir -p dist
+
+          # Linux builds
+          GOOS=linux GOARCH=amd64 go build -o dist/linux-amd64-backend
+          GOOS=linux GOARCH=386 go build -o dist/linux-386-backend
+          GOOS=linux GOARCH=arm go build -o dist/linux-arm-backend
+          GOOS=linux GOARCH=arm64 go build -o dist/linux-arm64-backend
+
+          # macOS builds
+          GOOS=darwin GOARCH=amd64 go build -o dist/darwin-amd64-backend
+          GOOS=darwin GOARCH=arm64 go build -o dist/darwin-arm64-backend
+
+          # Windows builds
+          GOOS=windows GOARCH=amd64 go build -o dist/windows-amd64-backend.exe
+          GOOS=windows GOARCH=386 go build -o dist/windows-386-backend.exe
+
+          # FreeBSD builds
+          GOOS=freebsd GOARCH=amd64 go build -o dist/freebsd-amd64-backend
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux AMD64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/linux-amd64-backend
+          asset_name: linux-amd64-backend
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux 386
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/linux-386-backend
+          asset_name: linux-386-backend
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux ARM
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/linux-arm-backend
+          asset_name: linux-arm-backend
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux ARM64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/linux-arm64-backend
+          asset_name: linux-arm64-backend
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS AMD64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/darwin-amd64-backend
+          asset_name: darwin-amd64-backend
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS ARM64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/darwin-arm64-backend
+          asset_name: darwin-arm64-backend
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows AMD64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/windows-amd64-backend.exe
+          asset_name: windows-amd64-backend.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows 386
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/windows-386-backend.exe
+          asset_name: windows-386-backend.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload FreeBSD AMD64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/freebsd-amd64-backend
+          asset_name: freebsd-amd64-backend
+          asset_content_type: application/octet-stream

@@ -21,12 +21,13 @@
 	},
 	"goBinary": {
 		"name": "backend",
-		"path": "./bin"
+		"path": "./bin",
+		"repo": "staticbackendhq/cli"
 	},
 	"homepage": "https://github.com/staticbackendhq/cli#readme",
 	"files": [
-		"dist",
-		"postinstall.js"
+		"postinstall.js",
+		"bin"
 	],
 	"dependencies": {
 		"mkdirp": "^1.0.4"

@@ -140,6 +140,50 @@ function parsePackageJson() {
  *  See: https://docs.npmjs.com/files/package.json#bin
  */
 var INVALID_INPUT = "Invalid inputs";
+async function downloadBinary(url, dest) {
+	const https = require('https');
+	const http = require('http');
+
+	return new Promise((resolve, reject) => {
+		const protocol = url.startsWith('https') ? https : http;
+		const file = fs.createWriteStream(dest);
+
+		console.info(`Downloading ${url}`);
+
+		protocol.get(url, (response) => {
+			// Handle redirects
+			if (response.statusCode === 302 || response.statusCode === 301) {
+				file.close();
+				fs.unlinkSync(dest);
+				return downloadBinary(response.headers.location, dest).then(resolve).catch(reject);
+			}
+
+			if (response.statusCode !== 200) {
+				file.close();
+				fs.unlinkSync(dest);
+				return reject(new Error(`Failed to download: ${response.statusCode} ${response.statusMessage}`));
+			}
+
+			response.pipe(file);
+
+			file.on('finish', () => {
+				file.close();
+				resolve();
+			});
+		}).on('error', (err) => {
+			file.close();
+			fs.unlinkSync(dest);
+			reject(err);
+		});
+
+		file.on('error', (err) => {
+			file.close();
+			fs.unlinkSync(dest);
+			reject(err);
+		});
+	});
+}
+
 async function install(callback) {
 	try {
 		var opts = parsePackageJson();
@@ -147,13 +191,30 @@ async function install(callback) {
 
 		mkdirp.sync(opts.binPath);
 
-		const src = path.join('.', 'dist', `${process.platform}-${ARCH_MAPPING[process.arch]}-${opts.binName}`);
+		// Construct the binary filename based on platform and architecture
+		const platform = PLATFORM_MAPPING[process.platform];
+		const arch = ARCH_MAPPING[process.arch];
+		const binaryName = `${platform}-${arch}-${opts.binName}`;
+
+		// Get the GitHub repo URL from package.json
+		const packageJsonPath = path.join(".", "package.json");
+		const packageJson = JSON.parse(fs.readFileSync(packageJsonPath));
+
+		if (!packageJson.goBinary.repo) {
+			return callback(new Error("'goBinary.repo' property is required (e.g., 'owner/repo')"));
+		}
+
+		// Construct GitHub release download URL
+		const downloadUrl = `https://github.com/${packageJson.goBinary.repo}/releases/download/v${opts.version}/${binaryName}`;
 		const dest = path.join(opts.binPath, opts.binName);
 
-		console.info(`Copying ${src} - the relevant binary for your platform ${process.platform}`);
+		console.info(`Downloading binary for ${process.platform}-${process.arch}`);
 
-		// Use native fs.copyFile instead of shell command for security
-		await fs.promises.copyFile(src, dest);
+		// Download the binary
+		await downloadBinary(downloadUrl, dest);
+
+		// Make it executable
+		await fs.promises.chmod(dest, 0o755);
 
 		await verifyAndPlaceBinary(opts.binName, opts.binPath);
 		callback(null);
