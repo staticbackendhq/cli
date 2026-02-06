@@ -23,9 +23,10 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Remove replace directive from go.mod
+      - name: Remove replace directive and update dependencies
         run: |
           sed -i '/replace github.com\/staticbackendhq\/core => ..\/core/d' go.mod
+          go mod tidy
           cat go.mod
 
       - name: Build binaries for all platforms
