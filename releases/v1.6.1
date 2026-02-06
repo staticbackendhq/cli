@@ -1,0 +1,24 @@
+## What's New in v1.6.1
+
+### 🚀 Features
+- Improved npm installation process
+- Binaries now downloaded from GitHub releases during install
+
+### 🔧 Improvements
+- Reduced npm package size from 244 MB to ~5 KB
+- Users only download their platform-specific binary
+- Faster installation times
+
+### 📦 Installation
+
+```bash
+npm install -g @staticbackend/cli
+```
+
+### 🛠️ Technical Details
+
+This release changes how binaries are distributed:
+- Binaries are now built with `CGO_ENABLED=0` for maximum portability
+- All binaries are statically linked
+- Supports Linux, macOS, Windows, and FreeBSD
+

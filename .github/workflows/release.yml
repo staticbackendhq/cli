@@ -34,21 +34,49 @@ jobs:
           mkdir -p dist
 
           # Linux builds
-          GOOS=linux GOARCH=amd64 go build -o dist/linux-amd64-backend
-          GOOS=linux GOARCH=386 go build -o dist/linux-386-backend
-          GOOS=linux GOARCH=arm go build -o dist/linux-arm-backend
-          GOOS=linux GOARCH=arm64 go build -o dist/linux-arm64-backend
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/linux-amd64-backend
+          CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o dist/linux-386-backend
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -o dist/linux-arm-backend
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o dist/linux-arm64-backend
 
           # macOS builds
-          GOOS=darwin GOARCH=amd64 go build -o dist/darwin-amd64-backend
-          GOOS=darwin GOARCH=arm64 go build -o dist/darwin-arm64-backend
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o dist/darwin-amd64-backend
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o dist/darwin-arm64-backend
 
           # Windows builds
-          GOOS=windows GOARCH=amd64 go build -o dist/windows-amd64-backend.exe
-          GOOS=windows GOARCH=386 go build -o dist/windows-386-backend.exe
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o dist/windows-amd64-backend.exe
+          CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -o dist/windows-386-backend.exe
 
           # FreeBSD builds
-          GOOS=freebsd GOARCH=amd64 go build -o dist/freebsd-amd64-backend
+          CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -o dist/freebsd-amd64-backend
+
+      - name: Check for release notes
+        id: release_notes
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          NOTES_FILE="releases/${TAG_NAME}.md"
+
+          if [ -f "$NOTES_FILE" ]; then
+            echo "Found release notes at $NOTES_FILE"
+            echo "body_file=$NOTES_FILE" >> $GITHUB_OUTPUT
+            echo "use_file=true" >> $GITHUB_OUTPUT
+          else
+            echo "No release notes found at $NOTES_FILE"
+            echo "use_file=false" >> $GITHUB_OUTPUT
+            # Create default release notes
+            cat > /tmp/release_notes.md << 'EOF'
+          ## What's Changed
+
+          See the [full changelog](https://github.com/${{ github.repository }}/compare/${{ github.ref_name }}...HEAD)
+
+          ## Installation
+
+          ```bash
+          npm install -g @staticbackend/cli
+          ```
+          EOF
+            echo "body_file=/tmp/release_notes.md" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Release
         id: create_release
@@ -58,6 +86,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref_name }}
+          body_path: ${{ steps.release_notes.outputs.body_file }}
           draft: false
           prerelease: false
 
