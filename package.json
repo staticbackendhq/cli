@@ -1,8 +1,11 @@
 {
 	"name": "@staticbackend/cli",
-	"version": "1.5.0",
+	"version": "1.6.0",
 	"description": "StaticBackend's CLI including local dev server",
 	"main": "index.js",
+	"bin": {
+		"backend": "./bin/backend"
+	},
 	"scripts": {
 		"postinstall": "node postinstall.js install",
 		"preuninstall": "node postinstall.js uninstall"

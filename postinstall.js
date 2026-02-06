@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 "use strict";
 // Thanks to author of https://github.com/sanathkr/go-npm, we were able to modify his code to work with private packages
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -12,7 +10,8 @@ var path = require('path'),
 var ARCH_MAPPING = {
 	"ia32": "386",
 	"x64": "amd64",
-	"arm": "arm"
+	"arm": "arm",
+	"arm64": "arm64"
 };
 
 // Mapping between Node's `process.platform` to Golang's
@@ -24,16 +23,12 @@ var PLATFORM_MAPPING = {
 };
 
 async function getInstallationPath() {
-
-	// `npm bin` will output the path where binary files should be installed
-
-	const value = await execShellCommand("npm bin -g");
-
+	// `npm bin -g` is deprecated in npm 9+, use `npm prefix -g` instead
+	const value = await execShellCommand("npm prefix -g");
 
 	var dir = null;
 	if (!value || value.length === 0) {
-
-		// We couldn't infer path from `npm bin`. Let's try to get it from
+		// We couldn't infer path from `npm prefix`. Let's try to get it from
 		// Environment variables set by NPM when it runs.
 		// npm_config_prefix points to NPM's installation directory where `bin` folder is available
 		// Ex: /Users/foo/.nvm/versions/node/v4.3.0
@@ -42,27 +37,36 @@ async function getInstallationPath() {
 			dir = path.join(env.npm_config_prefix, "bin");
 		}
 	} else {
-		dir = value.trim();
+		dir = path.join(value.trim(), "bin");
 	}
 
+	if (!dir) {
+		throw new Error("Could not determine npm global bin directory");
+	}
+
+	// Create directory if it doesn't exist
 	await mkdirp(dir);
 	return dir;
 }
 
-async function verifyAndPlaceBinary(binName, binPath, callback) {
-	if (!fs.existsSync(path.join(binPath, binName))) return callback('Downloaded binary does not contain the binary specified in configuration - ' + binName);
+async function verifyAndPlaceBinary(binName, binPath) {
+	const sourcePath = path.join(binPath, binName);
+
+	if (!fs.existsSync(sourcePath)) {
+		throw new Error('Downloaded binary does not contain the binary specified in configuration - ' + binName);
+	}
 
 	// Get installation path for executables under node
 	const installationPath = await getInstallationPath();
-	// Copy the executable to the path
-	fs.rename(path.join(binPath, binName), path.join(installationPath, binName), (err) => {
-		if (!err) {
-			console.info("Installed cli successfully");
-			callback(null);
-		} else {
-			callback(err);
-		}
-	});
+	const targetPath = path.join(installationPath, binName);
+
+	// Copy the executable to the installation path
+	await fs.promises.rename(sourcePath, targetPath);
+
+	// Make sure the binary is executable
+	await fs.promises.chmod(targetPath, 0o755);
+
+	console.info("Installed cli successfully");
 }
 
 function validateConfiguration(packageJson) {
@@ -137,30 +141,47 @@ function parsePackageJson() {
  */
 var INVALID_INPUT = "Invalid inputs";
 async function install(callback) {
+	try {
+		var opts = parsePackageJson();
+		if (!opts) return callback(INVALID_INPUT);
 
-	var opts = parsePackageJson();
-	if (!opts) return callback(INVALID_INPUT);
-	mkdirp.sync(opts.binPath);
-	const src = `./dist/${process.platform}-${ARCH_MAPPING[process.arch]}-${opts.binName}`;
-	console.info(`Copying ${src} - the relevant binary for your platform ${process.platform}`);
-	await execShellCommand(`cp ${src} ${opts.binPath}/${opts.binName}`);
-	await verifyAndPlaceBinary(opts.binName, opts.binPath, callback);
+		mkdirp.sync(opts.binPath);
+
+		const src = path.join('.', 'dist', `${process.platform}-${ARCH_MAPPING[process.arch]}-${opts.binName}`);
+		const dest = path.join(opts.binPath, opts.binName);
+
+		console.info(`Copying ${src} - the relevant binary for your platform ${process.platform}`);
+
+		// Use native fs.copyFile instead of shell command for security
+		await fs.promises.copyFile(src, dest);
+
+		await verifyAndPlaceBinary(opts.binName, opts.binPath);
+		callback(null);
+	} catch (err) {
+		callback(err);
+	}
 }
 
 async function uninstall(callback) {
-	var opts = parsePackageJson();
 	try {
+		var opts = parsePackageJson();
+		if (!opts) {
+			console.info("Uninstalled cli successfully");
+			return callback(null);
+		}
+
 		const installationPath = await getInstallationPath();
-		fs.unlink(path.join(installationPath, opts.binName), (err) => {
-			if (err) {
-				return callback(err);
-			}
-		});
+		const binaryPath = path.join(installationPath, opts.binName);
+
+		// Use promises API for consistency
+		await fs.promises.unlink(binaryPath);
+		console.info("Uninstalled cli successfully");
+		callback(null);
 	} catch (ex) {
-		// Ignore errors when deleting the file.
+		// Ignore errors when deleting the file (might not exist)
+		console.info("Uninstalled cli successfully");
+		callback(null);
 	}
-	console.info("Uninstalled cli successfully");
-	return callback(null);
 }
 
 // Parse command line arguments and call the right method
