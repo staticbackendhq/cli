@@ -27,8 +27,8 @@ func getPublicKey() (pubKey string, ok bool) {
 func getRootToken() (tok string, ok bool) {
 	tok = viper.GetString("rootToken")
 	if len(tok) == 0 {
-		printError("cannot find rootToken in your .backend config file")
-		fmt.Println("\nMake sure to get your root token and save it in a .backend YAML config file.")
+		printError("cannot find rootToken in your .backend.yml config file")
+		fmt.Println("\nMake sure to get your root token and save it in a .backend.yml config file.")
 		fmt.Println("\nFor instance:")
 		fmt.Printf("\n\tregion: na1")
 		fmt.Printf("\n\tpubKey: your-key-here")
