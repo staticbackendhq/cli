@@ -19,13 +19,15 @@ const (
 var clbold = color.Bold.Render
 
 func printError(format string, args ...any) {
-	banner := color.New(color.FgWhite, color.BgRed).Render(" ERROR >")
-	fmt.Printf("%s %s\n", banner, fmt.Sprintf(format, args...))
+	banner := color.New(color.FgWhite, color.BgRed).Render(" ERROR ")
+	arrow := color.New(color.FgRed).Render("▶")
+	fmt.Printf("%s%s %s\n", banner, arrow, fmt.Sprintf(format, args...))
 }
 
 func printSuccess(format string, args ...any) {
-	banner := color.New(color.FgWhite, color.BgGreen).Render(" SUCCESS >")
-	fmt.Printf("%s %s\n", banner, fmt.Sprintf(format, args...))
+	banner := color.New(color.FgWhite, color.BgGreen).Render(" SUCCESS ")
+	arrow := color.New(color.FgGreen).Render("▶")
+	fmt.Printf("%s%s %s\n", banner, arrow, fmt.Sprintf(format, args...))
 }
 
 var cfgFile string
