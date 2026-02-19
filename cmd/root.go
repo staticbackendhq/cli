@@ -30,6 +30,12 @@ func printSuccess(format string, args ...any) {
 	fmt.Printf("%s%s %s\n", banner, arrow, fmt.Sprintf(format, args...))
 }
 
+func printWarning(format string, args ...any) {
+	banner := color.New(color.FgWhite, color.BgYellow).Render(" WARNING ")
+	arrow := color.New(color.FgYellow).Render("▶")
+	fmt.Printf("%s%s %s\n", banner, arrow, fmt.Sprintf(format, args...))
+}
+
 var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands

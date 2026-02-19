@@ -27,11 +27,15 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 			fmt.Println(err)
 			return
 		}
-		pk := "dev-memory-pk"
+		pk := "dev_memory_pk"
 		region := "dev"
 		rtoken := "safe-to-use-in-dev-root-token"
+		email := "admin@dev.com"
+		password := "devpw1234"
 
-		if !dev {
+		if dev {
+			fmt.Println("In development, an admin user is already available: admin@dev.com / devpw1234")
+		} else {
 			var err error
 
 			reader := bufio.NewReader(os.Stdin)
@@ -62,6 +66,23 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 
 			rtoken = strings.Replace(rtoken, "\n", "", -1)
 
+			fmt.Print("enter your email: ")
+			email, err = reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("error: ", err)
+				return
+			}
+
+			email = strings.Replace(email, "\n", "", -1)
+
+			fmt.Print("enter your password: ")
+			password, err = reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("error: ", err)
+				return
+			}
+
+			password = strings.Replace(password, "\n", "", -1)
 		}
 
 		backend.PublicKey = pk
@@ -73,7 +94,13 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 			return
 		}
 
-		s := fmt.Sprintf("pubKey: %s\nregion: %s\nrootToken: %s", pk, region, rtoken)
+		authToken, err := backend.Login(email, password)
+		if err != nil {
+			fmt.Println("error logging in with email/password: ", err)
+			authToken = ""
+		}
+
+		s := fmt.Sprintf("pubKey: %s\nregion: %s\nrootToken: %s\nemail: %s\npassword: %s\nauthToken: %s", pk, region, rtoken, email, password, authToken)
 		if err := os.WriteFile(".backend.yml", []byte(s), 0660); err != nil {
 			fmt.Println("unable to save your credentials: ", err)
 			return
