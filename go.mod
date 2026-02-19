@@ -6,7 +6,7 @@ require (
 	github.com/gookit/color v1.2.2
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.7.0
-	github.com/staticbackendhq/backend-go v1.4.0
+	github.com/staticbackendhq/backend-go v1.6.3
 	github.com/staticbackendhq/core v1.5.0
 )
 
