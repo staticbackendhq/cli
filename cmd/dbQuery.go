@@ -36,7 +36,7 @@ Supported operators:
 	> or >=		Greater than clause
 	< or <=		Lower than clause
 	`,
-		clbold(clsecondary("Query a repository")),
+		clbold("Query a repository"),
 		clbold("filters"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -50,10 +50,10 @@ Supported operators:
 		}
 
 		if len(args) == 0 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("repository"), cldanger("please supply a table name."))
+			printError("Argument missing: repository — please supply a table name.")
 			return
 		} else if len(args) == 1 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("filters"), cldanger("please provice filters."))
+			printError("Argument missing: filters — please provide filters.")
 			return
 		}
 
@@ -87,7 +87,7 @@ Supported operators:
 		var results []map[string]interface{}
 		meta, err := backend.SudoFind(tok, repo, filters, &results, lp)
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
@@ -95,7 +95,7 @@ Supported operators:
 		for _, doc := range results {
 			o := "{ "
 			for k, v := range doc {
-				o += fmt.Sprintf("%s: %v, ", clsecondary(k), v)
+				o += fmt.Sprintf("%s: %v, ", k, v)
 			}
 
 			o = strings.TrimSuffix(o, ", ") + " }"

@@ -18,10 +18,10 @@ var functionInfoCmd = &cobra.Command{
 
 This command displays the last 100 run history and function output.
 
-This is useful to diagnose if you're using the %s runtime function inside your 
+This is useful to diagnose if you're using the %s runtime function inside your
 function code.
 	`,
-		clbold(clsecondary("Display function run hostory")),
+		clbold("Display function run history"),
 		clbold("log"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -35,13 +35,13 @@ function code.
 		}
 
 		if len(args) != 1 {
-			fmt.Printf("%s: only a name should be specified\n", cldanger("argument missmatch"))
+			printError("argument mismatch: only a name should be specified")
 			return
 		}
 
 		fn, err := backend.FunctionInfo(tok, args[0])
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("error while retrieving the function"), err)
+			printError("error while retrieving the function: %v", err)
 			return
 		}
 
@@ -68,12 +68,9 @@ function code.
 		if start > 0 {
 			for i := start; i > end; i-- {
 				run := fn.History[i-1]
-				fmt.Printf("%s:%d | %s:%s | %s:%v\n",
-					clsecondary("version"),
+				fmt.Printf("version:%d | start:%s | execution time:%v\n",
 					run.Version,
-					clsecondary("start"),
 					run.Started.Format("2006/01/02 15:04"),
-					clsecondary("execution time"),
 					run.Completed.Sub(run.Started),
 				)
 				for _, o := range run.Output {

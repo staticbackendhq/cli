@@ -16,11 +16,11 @@ var loginCmd = &cobra.Command{
 	Short: "Login to your StaticBackend account.",
 	Long: fmt.Sprintf(`
 %s
-	
+
 You have to authenticate to manipulate your StaticBackend data.
-	
+
 We're saving your root token in the .backend.yml file, make sure to add it to your .gitignore file.
-	`, clbold(clsecondary("Login to your account"))),
+	`, clbold("Login to your account")),
 	Run: func(cmd *cobra.Command, args []string) {
 		dev, err := cmd.Flags().GetBool("dev")
 		if err != nil {
@@ -35,7 +35,7 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 			var err error
 
 			reader := bufio.NewReader(os.Stdin)
-			fmt.Printf("%s\n", clsecondary("enter your Public Key: "))
+			fmt.Print("enter your Public Key: ")
 			pk, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("error: ", err)
@@ -44,7 +44,7 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 
 			pk = strings.Replace(pk, "\n", "", -1)
 
-			fmt.Printf("%s\n", clsecondary("enter host URL: "))
+			fmt.Print("enter host URL: ")
 			region, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("error: ", err)
@@ -53,7 +53,7 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 
 			region = strings.Replace(region, "\n", "", -1)
 
-			fmt.Printf("%s\n", clsecondary("enter your Root Token: "))
+			fmt.Print("enter your Root Token: ")
 			rtoken, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("error: ", err)
@@ -79,7 +79,7 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 			return
 		}
 
-		fmt.Printf("%s\n\nYou're ready to use the CLI.", clsecondary("Your .backend.yml file has been setup."))
+		fmt.Println("Your .backend.yml file has been setup.\n\nYou're ready to use the CLI.")
 	},
 }
 

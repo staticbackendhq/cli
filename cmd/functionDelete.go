@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/staticbackendhq/backend-go"
+	"fmt"
 )
 
 // functionList lists all server-side functions
@@ -16,7 +15,7 @@ var functionDeleteCmd = &cobra.Command{
 
 This will delete the function permanently, including all of its run history.
 	`,
-		clbold(clsecondary("Delete a functions")),
+		clbold("Delete a function"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		if setBackend() == false {
@@ -29,16 +28,16 @@ This will delete the function permanently, including all of its run history.
 		}
 
 		if len(args) != 1 {
-			fmt.Printf("%s: only a name should be specified\n", cldanger("argument missmatch"))
+			printError("argument mismatch: only a name should be specified")
 			return
 		}
 
 		if err := backend.DeleteFunction(tok, args[0]); err != nil {
-			fmt.Printf("%s: %v\n", cldanger("error deleting your function"), err)
+			printError("error deleting your function: %v", err)
 			return
 		}
 
-		fmt.Printf("%s: the function %s has been deleted\n", clsuccess("success"), args[0])
+		printSuccess("the function %s has been deleted", args[0])
 	},
 }
 

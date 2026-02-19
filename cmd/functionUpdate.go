@@ -24,7 +24,7 @@ We support two type of triggers at this moment:
 %s: invoke via a URL
 %s: a topic/event that will run your function when published
 	`,
-		clbold(clsecondary("Update a function")),
+		clbold("Update a function"),
 		clbold("web"),
 		clbold("any_topic_here"),
 	),
@@ -40,31 +40,31 @@ We support two type of triggers at this moment:
 
 		name, err := cmd.Flags().GetString("name")
 		if err != nil || len(name) == 0 {
-			fmt.Printf("%s: the --name option is required\n", cldanger("missing parameter"))
+			printError("missing parameter: the --name option is required")
 			return
 		}
 
 		trigger, err := cmd.Flags().GetString("trigger")
 		if err != nil || len(trigger) == 0 {
-			fmt.Printf("%s: the --trigger option is required\n", cldanger("missing parameter"))
+			printError("missing parameter: the --trigger option is required")
 			return
 		}
 
 		source, err := cmd.Flags().GetString("source")
 		if err != nil || len(trigger) == 0 {
-			fmt.Printf("%s: the --source option is required\n", cldanger("missing parameter"))
+			printError("missing parameter: the --source option is required")
 			return
 		}
 
 		b, err := os.ReadFile(source)
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("error reading source file"), err)
+			printError("error reading source file: %v", err)
 			return
 		}
 
 		fn, err := backend.FunctionInfo(tok, name)
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("function info error"), err)
+			printError("function info error: %v", err)
 			return
 		}
 
@@ -76,15 +76,15 @@ We support two type of triggers at this moment:
 		}
 
 		if err := backend.UpdateFunction(tok, upfn); err != nil {
-			fmt.Printf("%s: %v\n", cldanger("error adding your function"), err)
+			printError("error updating your function: %v", err)
 			return
 		}
 
-		fmt.Printf("%s: %s\n", clgreen("Function updated successfully"), clbold(name))
+		printSuccess("Function %s updated successfully", clbold(name))
 		if trigger == "web" {
-			fmt.Printf("%s: %s\n", clsecondary("Function URL"), clbold("[your_domain]/fn/exec/"+name))
+			fmt.Printf("Function URL: %s\n", clbold("[your_domain]/fn/exec/"+name))
 		} else {
-			fmt.Printf("%s: %s\n", clsecondary("Function will trigger on topic"), clbold(trigger))
+			fmt.Printf("Function will trigger on topic: %s\n", clbold(trigger))
 		}
 	},
 }

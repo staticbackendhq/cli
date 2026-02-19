@@ -19,7 +19,7 @@ To create a document you name the repository and pass a JSON object in a string.
 
 $> backend db create tasks "{ name: \"task 1\", assign: \"dominic\", done: false }"
 	`,
-		clbold(clsecondary("Create document")),
+		clbold("Create document"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		if !setBackend() {
@@ -32,10 +32,10 @@ $> backend db create tasks "{ name: \"task 1\", assign: \"dominic\", done: false
 		}
 
 		if len(args) == 0 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("repository"), cldanger("please supply a table name."))
+			printError("Argument missing: repository — please supply a table name.")
 			return
 		} else if len(args) == 1 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("json object"), cldanger("please supply a document json object."))
+			printError("Argument missing: json object — please supply a document json object.")
 			return
 		}
 
@@ -44,19 +44,19 @@ $> backend db create tasks "{ name: \"task 1\", assign: \"dominic\", done: false
 		var doc map[string]interface{}
 
 		if err := json.Unmarshal([]byte(raw), &doc); err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
 		var result map[string]interface{}
 		if err := backend.SudoCreate(tok, repo, doc, &result); err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
 		o := "{\n"
 		for k, v := range result {
-			o += fmt.Sprintf("\t%s: %v, \n", clsecondary(k), v)
+			o += fmt.Sprintf("\t%s: %v, \n", k, v)
 		}
 
 		o += "}"

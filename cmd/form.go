@@ -13,10 +13,10 @@ var formCmd = &cobra.Command{
 	Long: fmt.Sprintf(`
 %s
 
-You can view and delete form submissions. You'll need a rootToken in your 
+You can view and delete form submissions. You'll need a rootToken in your
 config file.
 	`,
-		clbold(clsecondary("Manage forms")),
+		clbold("Manage forms"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 

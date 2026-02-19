@@ -19,7 +19,7 @@ If you specify a %s only submissions for this form will be listed.
 
 Otherwise, the latest 100 submissions across all your forms will be displayed.
 	`,
-		clbold(clsecondary("List form submissions")),
+		clbold("List form submissions"),
 		clbold("form-name"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -39,7 +39,7 @@ Otherwise, the latest 100 submissions across all your forms will be displayed.
 
 		results, err := backend.ListForm(tok, name)
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
@@ -47,7 +47,7 @@ Otherwise, the latest 100 submissions across all your forms will be displayed.
 		for _, doc := range results {
 			o := "{ "
 			for k, v := range doc {
-				o += fmt.Sprintf("%s: %v, ", clsecondary(k), v)
+				o += fmt.Sprintf("%s: %v, ", k, v)
 			}
 
 			o = strings.TrimSuffix(o, ", ") + " }"

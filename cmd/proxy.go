@@ -21,15 +21,15 @@ var proxyCmd = &cobra.Command{
 	Long: fmt.Sprintf(`
 %s
 
-This command starts a proxy server relaying your requests to the production 
+This command starts a proxy server relaying your requests to the production
 backend.
 
-It is useful if you'd like to test your application against the production 
+It is useful if you'd like to test your application against the production
 backend without deploying your application changes yet.
 
-All requests are proxy as-is, and the responses sent to you without any 
+All requests are proxy as-is, and the responses sent to you without any
 modifications.
-	`, clbold(clsecondary("Proxy requests to production"))),
+	`, clbold("Proxy requests to production")),
 	Run: func(cmd *cobra.Command, args []string) {
 		f := cmd.Flag("port")
 		startProxy(f.Value.String())
@@ -53,7 +53,7 @@ func init() {
 func startProxy(port string) {
 	region := viper.GetString("region")
 	if len(region) == 0 {
-		fmt.Printf("%s %s %s\n", cldanger("Missing a"), clerror("region"), cldanger("config entry in your config file"))
+		printError("Missing a region config entry in your config file")
 		os.Exit(1)
 	}
 
@@ -61,7 +61,7 @@ func startProxy(port string) {
 
 	http.HandleFunc("/", proxy)
 
-	fmt.Printf("%s http://localhost:%s\n", clsecondary("Proxy server started at:"), port)
+	fmt.Printf("Proxy server started at: http://localhost:%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 

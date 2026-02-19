@@ -15,7 +15,7 @@ var dbCmd = &cobra.Command{
 
 You may perform CRUD operations if you have an admin level login.
 	`,
-		clbold(clsecondary("Manage your database")),
+		clbold("Manage your database"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 

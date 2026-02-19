@@ -9,7 +9,6 @@ import (
 	sbconfig "github.com/staticbackendhq/core/config"
 	"github.com/staticbackendhq/core/logger"
 
-	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 )
 
@@ -22,21 +21,16 @@ var serverCmd = &cobra.Command{
 
 You may develop your application locally using the development server.
 
-It has a direct mapping with StaticBackend API. You'll need no code changes 
+It has a direct mapping with StaticBackend API. You'll need no code changes
 when going from local to production.
 
 There are some limitations that you can learn more about here.
 
-%s
+https://staticbackend.dev/cli
 	`,
-		clbold(clsecondary("StatickBackend development server")),
-		clnote("https://staticbackend.dev/cli"),
+		clbold("StaticBackend development server"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
-		if cmd.Flag("no-color").Value.String() == "true" {
-			color.Disable()
-		}
-
 		f := cmd.Flag("port")
 		persistData := cmd.Flag("persist-data").Value.String() == "true"
 
@@ -86,7 +80,7 @@ func init() {
 }
 
 func createCustomer(uri, port string) {
-	fmt.Printf("%s: %s\n\n", clsecondary("server started at"), clbold("http://localhost:"+port))
+	fmt.Printf("server started at: %s\n\n", clbold("http://localhost:"+port))
 
 	time.Sleep(500 * time.Millisecond)
 
@@ -102,8 +96,5 @@ func createCustomer(uri, port string) {
 	}
 	defer resp.Body.Close()
 
-	fmt.Printf("%s CTRL+C %s\n\n",
-		clsecondary("press"),
-		clsecondary("to quit and close server"),
-	)
+	fmt.Printf("press CTRL+C to quit and close server\n\n")
 }

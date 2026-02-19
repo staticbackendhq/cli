@@ -17,7 +17,7 @@ var dbRepoCmd = &cobra.Command{
 
 Retrieve a list of all database repositories.
 	`,
-		clbold(clsecondary("List repositories")),
+		clbold("List repositories"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		if setBackend() == false {
@@ -31,19 +31,18 @@ Retrieve a list of all database repositories.
 
 		names, err := backend.SudoListRepositories(tok)
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
-		o := fmt.Sprintf("%d repositories, repo using %s are reserved repositories\n\n",
+		o := fmt.Sprintf("%d repositories, repos using this format are reserved repositories\n\n",
 			len(names),
-			clsecondary("this format"),
 		)
 
 		o += "[\n"
 		for _, name := range names {
 			if strings.HasPrefix(name, "sb_") {
-				o += fmt.Sprintf("\t%s, \n", clsecondary(name))
+				o += fmt.Sprintf("\t%s (reserved), \n", name)
 			} else {
 				o += fmt.Sprintf("\t%s, \n", name)
 			}

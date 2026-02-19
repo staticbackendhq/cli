@@ -16,7 +16,7 @@ var dbGetCmd = &cobra.Command{
 
 Retrieve a specific document by its id from a repository.
 	`,
-		clbold(clsecondary("Get a document by id")),
+		clbold("Get a document by id"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		if !setBackend() {
@@ -29,10 +29,10 @@ Retrieve a specific document by its id from a repository.
 		}
 
 		if len(args) == 0 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("repository"), cldanger("please supply a table name."))
+			printError("Argument missing: repository — please supply a table name.")
 			return
 		} else if len(args) == 1 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("id"), cldanger("please supply a document id."))
+			printError("Argument missing: id — please supply a document id.")
 			return
 		}
 
@@ -40,13 +40,13 @@ Retrieve a specific document by its id from a repository.
 
 		var result map[string]interface{}
 		if err := backend.SudoGetByID(tok, repo, id, &result); err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
 		o := "{\n"
 		for k, v := range result {
-			o += fmt.Sprintf("\t%s: %v, \n", clsecondary(k), v)
+			o += fmt.Sprintf("\t%s: %v, \n", k, v)
 		}
 
 		o += "}"

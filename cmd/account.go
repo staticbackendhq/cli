@@ -17,7 +17,7 @@ You need to create an account before running your backend in production.
 
 We're requiring a credit card when creating new account.
 	`,
-		clbold(clsecondary("Manage your account")),
+		clbold("Manage your account"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("account called")

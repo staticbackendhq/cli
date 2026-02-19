@@ -10,11 +10,11 @@ import (
 func getPublicKey() (pubKey string, ok bool) {
 	pubKey = viper.GetString("pubKey")
 	if len(pubKey) == 0 {
-		fmt.Printf("%s\n", cldanger("cannot find pubKey in your .backend.yml config file"))
+		printError("cannot find pubKey in your .backend.yml config file")
 		fmt.Println("\nMake sure to get your StaticBackend public key and save it in a .backend.yml YAML config file.")
 		fmt.Println("\nFor instance:")
-		fmt.Printf("\n\t%s: na1", clsecondary("region"))
-		fmt.Printf("\n\t%s: your-key-here", clsecondary("pubKey"))
+		fmt.Printf("\n\tregion: na1")
+		fmt.Printf("\n\tpubKey: your-key-here")
 		fmt.Println("\nYou received your public key when you created your account via email.")
 		fmt.Printf("\n%s", clbold("use \"backend login --dev\" to work with the development server.\n\n"))
 		return
@@ -27,12 +27,12 @@ func getPublicKey() (pubKey string, ok bool) {
 func getRootToken() (tok string, ok bool) {
 	tok = viper.GetString("rootToken")
 	if len(tok) == 0 {
-		fmt.Printf("%s\n", cldanger("cannot find rootToken in your .backend config file"))
+		printError("cannot find rootToken in your .backend config file")
 		fmt.Println("\nMake sure to get your root token and save it in a .backend YAML config file.")
 		fmt.Println("\nFor instance:")
-		fmt.Printf("\n\t%s: na1", clsecondary("region"))
-		fmt.Printf("\n\t%s: your-key-here", clsecondary("pubKey"))
-		fmt.Printf("\n\t%s: your-root-token-here", clsecondary("rootToken"))
+		fmt.Printf("\n\tregion: na1")
+		fmt.Printf("\n\tpubKey: your-key-here")
+		fmt.Printf("\n\trootToken: your-root-token-here")
 		fmt.Println("\nYou received your root token when you created your account via email.")
 		return
 	}

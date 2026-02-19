@@ -15,23 +15,17 @@ const (
 	Version = "v1.5.0"
 )
 
-var (
-	clgreen     = color.FgGreen.Render
-	clinfo      = color.Info.Render
-	clnote      = color.Note.Render
-	cllight     = color.Light.Render
-	clerror     = color.Error.Render
-	cldanger    = color.Danger.Render
-	cldebug     = color.Debug.Render
-	clnotice    = color.Notice.Render
-	clsuccess   = color.Success.Render
-	clcomment   = color.Comment.Render
-	clprimary   = color.Primary.Render
-	clwarning   = color.Warn.Render
-	clquestion  = color.Question.Render
-	clsecondary = color.Secondary.Render
-	clbold      = color.Bold.Render
-)
+var clbold = color.Bold.Render
+
+func printError(format string, args ...any) {
+	banner := color.New(color.FgWhite, color.BgRed).Render(" ERROR >")
+	fmt.Printf("%s %s\n", banner, fmt.Sprintf(format, args...))
+}
+
+func printSuccess(format string, args ...any) {
+	banner := color.New(color.FgWhite, color.BgGreen).Render(" SUCCESS >")
+	fmt.Printf("%s %s\n", banner, fmt.Sprintf(format, args...))
+}
 
 var cfgFile string
 
@@ -45,17 +39,15 @@ var rootCmd = &cobra.Command{
 This CLI gives you the following functionalities:
 
 - A local development server: %s
-- Managing your backend resources: %s
-- Managing your account: %s
+- Managing your backend resources: db, function, form, etc
+- Managing your account: billing
 
 Use "backend server" to start your local dev server.
 
 Use "backend login --dev" to automatically configure for local dev.
 	`,
-		clbold(clsecondary("StaticBackend CLI "+Version)),
+		clbold("StaticBackend CLI "+Version),
 		clbold("backend server"),
-		clsecondary("db, function, form, etc"),
-		clsecondary("billing"),
 	),
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -89,7 +81,6 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $PWD/.backend.yaml)")
-	rootCmd.PersistentFlags().Bool("no-color", false, "turns color off")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -125,6 +116,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("===\n%s: %v\n===\n\n", clwarning("No config file used"), err)
+		fmt.Printf("===\nNo config file used: %v\n===\n\n", err)
 	}
 }

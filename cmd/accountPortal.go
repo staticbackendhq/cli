@@ -15,8 +15,8 @@ var accountPortalCmd = &cobra.Command{
 %s
 
 Let you manage your billing account, change plan, update credit card and cancel.
-		`,
-		clbold(clsecondary("Access your billing portal")),
+	`,
+		clbold("Access your billing portal"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		if !setBackend() {
@@ -30,11 +30,11 @@ Let you manage your billing account, change plan, update credit card and cancel.
 
 		var link string
 		if err := backend.Get(tok, "/account/portal", &link); err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
-		fmt.Printf("%s\n", clsecondary("You may access your billing portal via this URL:"))
+		fmt.Println("You may access your billing portal via this URL:")
 		fmt.Println(link)
 	},
 }

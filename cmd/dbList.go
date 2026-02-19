@@ -17,7 +17,7 @@ var dbListCmd = &cobra.Command{
 
 You may view documents from first to last or last to first.
 	`,
-		clbold(clsecondary("List documents from a repository")),
+		clbold("List documents from a repository"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		if !setBackend() {
@@ -30,7 +30,7 @@ You may view documents from first to last or last to first.
 		}
 
 		if len(args) == 0 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("repository"), cldanger("please supply a table name."))
+			printError("Argument missing: repository — please supply a table name.")
 			return
 		}
 
@@ -60,7 +60,7 @@ You may view documents from first to last or last to first.
 		var results []map[string]interface{}
 		meta, err := backend.SudoList(tok, repo, &results, lp)
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
@@ -68,7 +68,7 @@ You may view documents from first to last or last to first.
 		for _, doc := range results {
 			o := "{ "
 			for k, v := range doc {
-				o += fmt.Sprintf("%s: %v, ", clsecondary(k), v)
+				o += fmt.Sprintf("%s: %v, ", k, v)
 			}
 
 			o = strings.TrimSuffix(o, ", ") + " }"

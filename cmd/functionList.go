@@ -21,7 +21,7 @@ If you specify a %s only functions for that trigger will be included.
 
 Otherwise, all functions are displayed.
 	`,
-		clbold(clsecondary("List functions")),
+		clbold("List functions"),
 		clbold("trigger"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -41,7 +41,7 @@ Otherwise, all functions are displayed.
 
 		results, err := backend.ListFunctions(tok)
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 

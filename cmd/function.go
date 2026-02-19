@@ -15,10 +15,9 @@ var functionCmd = &cobra.Command{
 
 You can create, update, list and view run history for all your functions.
 
-You'll need a rootToken in your 
-config file.
+You'll need a rootToken in your config file.
 	`,
-		clbold(clsecondary("Manage functions")),
+		clbold("Manage functions"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 

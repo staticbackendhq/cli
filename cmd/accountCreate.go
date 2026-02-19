@@ -19,26 +19,26 @@ We require a credit card to create new account.
 No charges or subscription will be assigned to the account creation.
 
 You may pick a paid plan later when you're ready.
-		`,
-		clbold(clsecondary("Create your account")),
+	`,
+		clbold("Create your account"),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			fmt.Printf("%s %s %s\n", cldanger("Argument missing"), clerror("email"), cldanger("please supply an email."))
+			printError("Argument missing: email — please supply an email.")
 			return
 		}
 
 		email := args[0]
 		stripeURL, err := backend.NewSystemAccount(email)
 		if err != nil {
-			fmt.Printf("%s: %v\n", cldanger("An error occured"), err)
+			printError("An error occurred: %v", err)
 			return
 		}
 
 		fmt.Printf("%s\n", clbold("Your account has been created and your 14-day trial is almost ready."))
 		fmt.Println("To complete your registration follow this link:")
 		fmt.Printf("%s\n", clbold(stripeURL))
-		fmt.Printf("\n\n%s\n", clsecondary("Your account will unlock once you add a payment method."))
+		fmt.Println("\n\nYour account will unlock once you add a payment method.")
 	},
 }
 
