@@ -17,9 +17,7 @@ You may list, add, and delete users for your application.
 	`,
 		clbold("Manage your application users"),
 	),
-	Run: func(cmd *cobra.Command, args []string) {
 
-	},
 }
 
 func init() {

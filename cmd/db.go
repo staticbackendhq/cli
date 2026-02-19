@@ -17,9 +17,7 @@ You may perform CRUD operations if you have an admin level login.
 	`,
 		clbold("Manage your database"),
 	),
-	Run: func(cmd *cobra.Command, args []string) {
 
-	},
 }
 
 func init() {

@@ -19,9 +19,7 @@ We're requiring a credit card when creating new account.
 	`,
 		clbold("Manage your account"),
 	),
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("account called")
-	},
+
 }
 
 func init() {
