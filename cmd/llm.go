@@ -9,7 +9,7 @@ import (
 )
 
 var llmCmd = &cobra.Command{
-	Use:   "llm [js|go]",
+	Use:   "llm [js|node|go]",
 	Short: "Write StaticBackend client library docs for LLM context.",
 	Long: fmt.Sprintf(`
 %s
@@ -21,11 +21,13 @@ have full context about the API.
 Available libraries:
 
   js   writes sb-js.md  (JavaScript / TypeScript client)
+  node writes sb-node.md  (Node.js / TypeScript server client)
   go   writes sb-go.md  (Go client)
 
 Example:
 
   backend llm js
+  backend llm node
   backend llm go
 	`, clbold("StaticBackend LLM context files")),
 	Args: cobra.ExactArgs(1),
@@ -38,11 +40,14 @@ Example:
 		case "js":
 			data = llm.JS
 			dest = "sb-js.md"
+		case "node":
+			data = llm.Node
+			dest = "sb-node.md"
 		case "go":
 			data = llm.Go
 			dest = "sb-go.md"
 		default:
-			printError("unknown library %q — use \"js\" or \"go\"", lib)
+			printError("unknown library %q — use \"js\", \"node\", or \"go\"", lib)
 			return
 		}
 

@@ -1,231 +1,316 @@
 # StaticBackend Go Client Library
 
-Go client wrapper for the StaticBackend API.
+Coding-agent reference for `github.com/staticbackendhq/backend-go` v1.7.
 
-Module: `github.com/staticbackendhq/backend-go`
+Use this file when generating Go code against StaticBackend. Keep the API shapes aligned with `../backend-go/*.go`.
 
 ## Setup
 
 ```go
 import backend "github.com/staticbackendhq/backend-go"
 
-// Required before any call
 backend.PublicKey = "your-public-key"
-backend.Region = backend.RegionLocalDev // or RegionNorthAmerica1, or a custom URL
-
-// For dev using the CLI you may use these hard coded keys
-// public key: dev_memory_pk
-// Root token: safe-to-use-in-dev-root-token
-
-// Region constants
-backend.RegionNorthAmerica1 // "na1" - managed hosting
-backend.RegionLocalDev      // "dev" - localhost:8099
-// For self-hosted: backend.Region = "https://your-server.com"
-
-// Optional verbose HTTP logging
-backend.Verbose = true
+backend.Region = backend.RegionLocalDev // or backend.RegionNorthAmerica1
+backend.Verbose = true                   // optional HTTP logging
 ```
 
-## Error Pattern
-
-All functions return `error`. On success, error is `nil`. Results are populated via pointer arguments.
+Region values:
 
 ```go
-token, err := backend.Register("user@example.com", "password")
+backend.RegionNorthAmerica1 // "na1", managed hosting
+backend.RegionLocalDev      // "dev", http://localhost:8099
+backend.Region = "https://your-self-hosted-api.example.com"
+```
+
+For local development with the StaticBackend CLI, common dev credentials are:
+
+```text
+public key: dev_memory_pk
+root token: safe-to-use-in-dev-root-token
+```
+
+## Error And Result Pattern
+
+Go functions return `error`; success means `err == nil`. Functions that return data either return it directly or populate a pointer argument.
+
+```go
+token, err := backend.Login("user@example.com", "password")
 if err != nil {
-    log.Fatal(err)
+    return err
 }
-// use token for all subsequent calls
 ```
 
-## Authentication
+Entity documents returned by DB APIs are account-scoped and normally include server-populated `id` and `accountId` fields.
+
+## Low-Level HTTP Helpers
+
+These are exported and can be used for endpoints not wrapped by the client:
 
 ```go
-// Register - creates user, returns session token
-token, err := backend.Register(email, password string) (string, error)
-
-// Login - returns session token
-token, err := backend.Login(email, password string) (string, error)
-
-// Get current user
-me, err := backend.Me(token string) (CurrentUser, error)
-// CurrentUser fields: AccountID, UserID, Email, Role (int)
-
-// Change password
-err := backend.SetPassword(token, email, oldPassword, newPassword string) error
-
-// Password reset flow
-code, err := backend.GetPasswordResetCode(token, email string) (string, error)
-err := backend.ResetPassword(email, code, password string) error
+err := backend.Get(token, "/path", &out)
+err := backend.Post(token, "/path", body, &out)
+err := backend.Put(token, "/path", body, &out)
+err := backend.Del(token, "/path")
 ```
 
-## Account Management
+Prefer higher-level helpers when they exist.
+
+## Authentication And Account APIs
 
 ```go
-// List all users in the account
-users, err := backend.Users(token string) ([]CurrentUser, error)
+token, err := backend.Register(email, password)
+token, err = backend.Login(email, password)
+token, err = backend.LoginForAccount(email, password, accountID)
 
-// Add a user to the same account
-user, err := backend.AddUser(token, email, password string) (CurrentUser, error)
+exists, err := backend.EmailExists(email)
 
-// Remove a user (token must have higher role than removed user)
-err := backend.RemoveUser(token, userID string) error
+me, err := backend.Me(token)
+// backend.CurrentUser{AccountID, UserID, Email, Role}
 
-// Get a token for a specific accountID (root token required)
-tok, err := backend.SudoGetToken(rootToken, accountID string) (string, error)
+err = backend.ChangeEmail(token, "new@example.com")
+err = backend.SetPassword(token, email, oldPassword, newPassword)
+err = backend.SetRole(rootOrAdminToken, accountID, email, role)
+
+users, err := backend.Users(token)
+user, err := backend.AddUser(token, email, password)
+err = backend.RemoveUser(token, userID)
+
+code, err := backend.GetPasswordResetCode(token, email)
+err = backend.ResetPassword(email, code, newPassword)
 ```
 
-__This requires the root token__.
-
-## Database Operations
-
-All DB functions take `token` and `repo` (collection name). Documents always get `id` and `accountId` auto-populated.
-
-### Filters
+Account association APIs:
 
 ```go
-// QueryOperator constants
-backend.QueryEqual            // "=="
-backend.QueryNotEqual         // "!="
-backend.QueryLowerThan        // "<"
-backend.QueryLowerThanEqual   // "<="
-backend.QueryGreaterThan      // ">"
-backend.QueryGreaterThanEqual // ">="
-backend.QueryIn               // "in"
-backend.QueryNotIn            // "!in"
-
-// QueryItem struct
-filter := backend.QueryItem{Field: "status", Op: backend.QueryEqual, Value: "active"}
-
-// Sentinel errors
-backend.ErrNoDocument       // FindOne returned 0 results
-backend.ErrMultipleDocument // FindOne returned >1 results
+associations, err := backend.ListAssociations(token) // []backend.AccountUser
+newToken, err := backend.PromoteUser(token)
 ```
 
-### ListParams & ListResult
+Root-token account APIs:
+
+```go
+tok, err := backend.SudoGetToken(rootToken, accountID)
+entries, err := backend.SudoGetUserAccounts(rootToken, email)
+authTok, err := backend.SudoGetAuthTokenByUserID(rootToken, accountID, userID)
+user, err := backend.SudoGetUserByID(rootToken, accountID, userID)
+```
+
+Exported account types:
+
+```go
+type AccountParams struct {
+    Email     string `json:"email"`
+    Password  string `json:"password"`
+    AccountID string `json:"accountId,omitempty"`
+}
+
+type CurrentUser struct {
+    AccountID string `json:"accountId"`
+    UserID    string `json:"id"`
+    Email     string `json:"email"`
+    Role      int    `json:"role"`
+}
+
+type User struct {
+    ID        string
+    AccountID string
+    Token     string
+    Email     string
+    Role      int
+    Created   time.Time
+}
+
+type AccountUser struct {
+    ID        string `json:"id"`
+    UserID    string `json:"userId"`
+    AccountID string `json:"accountId"`
+    Email     string `json:"email"`
+    Role      int    `json:"role"`
+    Token     string `json:"token"`
+}
+
+type UserAccountEntry struct {
+    AccountID string `json:"accountId"`
+    Role      int    `json:"role"`
+    Home      bool   `json:"home"`
+    Token     string `json:"token,omitempty"`
+}
+```
+
+## Database APIs
+
+All normal DB functions take `token` and `repo`, where `repo` is the collection name.
+
+Filters:
+
+```go
+type QueryItem struct {
+    Field string
+    Op    QueryOperator
+    Value interface{}
+}
+
+filters := []backend.QueryItem{
+    {Field: "status", Op: backend.QueryEqual, Value: "active"},
+}
+```
+
+Operators: `backend.QueryEqual`, `backend.QueryNotEqual`, `backend.QueryLowerThan`, `backend.QueryLowerThanEqual`, `backend.QueryGreaterThan`, `backend.QueryGreaterThanEqual`, `backend.QueryIn`, and `backend.QueryNotIn`.
+
+Sentinel errors: `backend.ErrNoDocument` and `backend.ErrMultipleDocument`.
+
+Paging:
 
 ```go
 params := &backend.ListParams{Page: 1, Size: 25, Descending: true}
 
-// ListResult returned by List/Find/SudoList/SudoFind
 type ListResult struct {
-    Page     int
-    PageSize int
-    Total    int
-    Results  interface{} // points to your slice
+    Page     int         `json:"page"`
+    PageSize int         `json:"size"`
+    Total    int         `json:"total"`
+    Results  interface{} `json:"results"`
 }
 ```
 
-### Create
+Create:
 
 ```go
-// Create one document - v is populated with the created document (including id, accountId)
-err := backend.Create(token, repo string, body interface{}, v interface{}) error
+var task Task
+err := backend.Create(token, "tasks", Task{Title: "Task 1"}, &task)
 
-// Create multiple documents
-ok, err := backend.CreateBulk(token, repo string, body interface{}) (bool, error)
+ok, err := backend.CreateBulk(token, "tasks", []Task{
+    {Title: "Task 1"},
+    {Title: "Task 2"},
+})
 ```
 
-### Read
+Read:
 
 ```go
-// List all documents
 var tasks []Task
-meta, err := backend.List(token, repo string, &tasks, params *ListParams) (ListResult, error)
+meta, err := backend.List(token, "tasks", &tasks, params)
 
-// Get by ID
 var task Task
-err := backend.GetByID(token, repo, id string, &task) error
+err = backend.GetByID(token, "tasks", id, &task)
 
-// Get multiple by IDs (avoids N+1 queries)
-var tasks []Task
-err := backend.GetByIDs(token, repo string, ids []string, &tasks) error
+var selected []Task
+err = backend.GetByIDs(token, "tasks", []string{id1, id2}, &selected)
 
-// Query with filters
-filters := []backend.QueryItem{
-    {Field: "done", Op: backend.QueryEqual, Value: false},
-}
-var tasks []Task
-meta, err := backend.Find(token, repo string, filters, &tasks, params *ListParams) (ListResult, error)
+meta, err = backend.Find(token, "tasks", filters, &tasks, params)
 
-// Find exactly one document
-var task Task
-err := backend.FindOne(token, repo string, filters []QueryItem, &task) error
-// Returns ErrNoDocument or ErrMultipleDocument if not exactly one match
+err = backend.FindOne(token, "tasks", filters, &task)
+// returns backend.ErrNoDocument or backend.ErrMultipleDocument when the match count is not exactly one
 
-// Full-text search
-var tasks []Task
-err := backend.Search(token, repo, keywords string, &tasks) error
+err = backend.Search(token, "tasks", "keywords", &tasks)
 
-// Count documents matching filters (pass nil for all)
-n, err := backend.Count(token, repo string, filters []QueryItem) (int64, error)
+n, err := backend.Count(token, "tasks", filters)
 ```
 
-### Update
+Update:
 
 ```go
-// Update a document (can be partial - only changed fields needed)
 var updated Task
-err := backend.Update(token, repo, id string, body interface{}, &updated) error
+err := backend.Update(token, "tasks", id, map[string]any{"status": "done"}, &updated)
 
-// Bulk update matching filters
-filters := []backend.QueryItem{{Field: "status", Op: backend.QueryEqual, Value: "pending"}}
-n, err := backend.UpdateBulk(token, repo string, filters []QueryItem, body interface{}) (int, error)
+n, err := backend.UpdateBulk(token, "tasks", filters, map[string]any{"status": "done"})
 
-// Increment/decrement a numeric field (n can be negative)
-err := backend.Increase(token, repo, id, field string, n int) error
+err = backend.Increase(token, "tasks", id, "priority", 1)
+err = backend.Increase(token, "tasks", id, "priority", -1)
 ```
 
-### Delete
+Delete:
 
 ```go
-err := backend.Delete(token, repo, id string) error
-err := backend.DeleteBulk(token, repo string, filters []QueryItem) error
+err := backend.Delete(token, "tasks", id)
+err = backend.DeleteBulk(token, "tasks", filters)
 ```
 
-### Sudo (Root Token) DB Operations
+## Root-Token Database APIs
 
-Sudo variants bypass account scoping - all documents across all accounts are accessible. Requires a root token.
+Sudo variants bypass normal account scoping and require a root token.
 
 ```go
-err := backend.SudoCreate(token, repo string, body interface{}, v interface{}) error
-meta, err := backend.SudoList(token, repo string, v interface{}, params *ListParams) (ListResult, error)
-err := backend.SudoGetByID(token, repo, id string, v interface{}) error
-err := backend.SudoGetByIDs(token, repo string, ids []string, v interface{}) error
-err := backend.SudoUpdate(token, repo, id string, body interface{}, v interface{}) error
-meta, err := backend.SudoFind(token, repo string, filters []QueryItem, v interface{}, params *ListParams) (ListResult, error)
-err := backend.SudoFindOne(token, repo string, filters []QueryItem, v interface{}) error
-err := backend.SudoDelete(token, repo, id string) error
+err := backend.SudoCreate(rootToken, repo, body, &out)
+meta, err := backend.SudoList(rootToken, repo, &items, params)
+err = backend.SudoGetByID(rootToken, repo, id, &out)
+err = backend.SudoGetByIDs(rootToken, repo, ids, &items)
+err = backend.SudoUpdate(rootToken, repo, id, body, &out)
+meta, err = backend.SudoFind(rootToken, repo, filters, &items, params)
+err = backend.SudoFindOne(rootToken, repo, filters, &out)
+err = backend.SudoDelete(rootToken, repo, id)
 
-// List all collection names
-names, err := backend.SudoListRepositories(token string) ([]string, error)
-
-// Add a DB index on a field
-err := backend.SudoAddIndex(token, repo, field string) error
+names, err := backend.SudoListRepositories(rootToken)
+err = backend.SudoAddIndex(rootToken, repo, field)
 ```
+
+If documents must be created under a specific account, prefer `SudoGetToken(rootToken, accountID)` and then call normal account-scoped DB functions with that returned token.
 
 ## File Storage
 
 ```go
-// Upload a file - returns id and public URL
 file, err := os.Open("photo.jpg")
-res, err := backend.StoreFile(token, filename string, file io.ReadSeeker) (StoreFileResult, error)
-// StoreFileResult: {ID string, URL string}
+if err != nil {
+    return err
+}
+defer file.Close()
 
-// Download file content
-buf, err := backend.DownloadFile(token, fileURL string) ([]byte, error)
+uploaded, err := backend.StoreFile(token, "photo.jpg", file)
+// backend.StoreFileResult{ID, URL}
 
-// Delete a file by its ID
-ok, err := backend.DeleteFile(token, id string) (bool, error)
+buf, err := backend.DownloadFile(token, uploaded.URL)
+
+usage, err := backend.StorageUsage(token)
+// backend.FileUsage{Bytes, GB}
+
+files, err := backend.ListFiles(token, &backend.ListFilesParams{
+    Page:   1,
+    SortBy: "size",
+})
+// backend.FileListResult{Page, Size, Total, Results}
+
+ok, err := backend.DeleteFile(token, uploaded.ID)
+```
+
+Exported storage types:
+
+```go
+type StoreFileResult struct {
+    ID  string `json:"id"`
+    URL string `json:"url"`
+}
+
+type File struct {
+    ID        string    `json:"id"`
+    AccountID string    `json:"accountId"`
+    Key       string    `json:"key"`
+    URL       string    `json:"url"`
+    Size      int64     `json:"size"`
+    Uploaded  time.Time `json:"uploaded"`
+}
+
+type FileUsage struct {
+    Bytes int64   `json:"bytes"`
+    GB    float64 `json:"gb"`
+}
+
+type FileListResult struct {
+    Page    int64
+    Size    int64
+    Total   int64
+    Results []File
+}
+
+type ListFilesParams struct {
+    Page   int
+    SortBy string // currently supports "size"
+}
 ```
 
 ## Email
 
 ```go
-// Send a simple email
-ok, err := backend.SendMail(token, from, fromName, to, subject, body, replyTo string) (bool, error)
+ok, err := backend.SendMail(token, from, fromName, to, subject, htmlBody, replyTo)
 
-// Send email with attachments
 email := backend.EmailData{
     From:     "you@example.com",
     FromName: "Your Name",
@@ -234,133 +319,187 @@ email := backend.EmailData{
     Body:     "<p>HTML body</p>",
     ReplyTo:  "reply@example.com",
     Attachments: []backend.Attachment{
-        {URL: "https://example.com/file.pdf"},                           // fetched by server
-        {Body: pdfBytes, ContentType: "application/pdf", Filename: "f.pdf"}, // inline bytes
+        {URL: "https://example.com/file.pdf"},
+        {Body: pdfBytes, ContentType: "application/pdf", Filename: "file.pdf"},
     },
 }
-ok, err := backend.SendMailWithAttachments(token string, email EmailData) (bool, error)
+ok, err = backend.SendMailWithAttachments(token, email)
 ```
 
-__You specify either the URL or the (body, content type, filename) as attachement__.
+For each attachment, use either `URL` or the inline `Body`, `ContentType`, and `Filename` fields.
 
-## Cache & Work Queue
+Exported email types:
 
 ```go
-// Cache (requires root token)
-err := backend.CacheSet(token, key string, v interface{}) error
-err := backend.CacheGet(token, key string, v interface{}) error
+type Attachment struct {
+    URL         string `json:"url"`
+    Body        []byte `json:"body"`
+    ContentType string `json:"contentType"`
+    Filename    string `json:"filename"`
+}
 
-// Work queue - enqueue a string value
-err := backend.QueueWork(token, key, value string) error
+type EmailData struct {
+    FromName    string       `json:"fromName"`
+    From        string       `json:"from"`
+    To          string       `json:"to"`
+    Subject     string       `json:"subject"`
+    Body        string       `json:"body"`
+    ReplyTo     string       `json:"replyTo"`
+    Attachments []Attachment `json:"attachments"`
+}
+```
 
-// Worker - polls every 5 seconds, call in a goroutine
-go backend.WorkerQueue(token, key string, func(val string) {
+## Cache, Queue, And Publish
+
+Root-token cache and queue helpers:
+
+```go
+err := backend.CacheSet(rootToken, "key", value)
+err = backend.CacheGet(rootToken, "key", &value)
+
+err = backend.QueueWork(rootToken, "queue-key", "string value")
+
+go backend.WorkerQueue(rootToken, "queue-key", func(val string) {
     // process val
 })
 ```
 
-## Messaging
+Publish a channel message, usually to trigger a server-side function:
 
 ```go
-// Publish a message to a channel
-err := backend.Publish(token, channel, typ string, data interface{}) error
+err := backend.Publish(token, "channel-name", "message-type", map[string]any{
+    "id": id,
+})
 ```
 
-## Extra Features
+`WorkerTask` is the exported callback type:
 
 ```go
-// Resize an image (PNG/JPG input → JPG output), returns StoreFileResult
-res, err := backend.ResizeImage(token, filename string, file io.ReadSeeker, maxWidth float64) (StoreFileResult, error)
-
-// Convert a public URL to PDF or PNG, returns StoreFileResult
-res, err := backend.ConvertURLToX(token string, data ConvertParam) (StoreFileResult, error)
-// ConvertParam: {ToPDF bool, URL string, FullPage bool}
-
-// Send SMS via Twilio (root token required)
-err := backend.SudoSendSMS(token string, data SMSData) error
-// SMSData: {AccountSID, AuthToken, ToNumber, FromNumber, Body string}
+type WorkerTask func(val string)
 ```
 
-## Server-side Functions
+## Server-Side Functions
 
 ```go
-// Add a function (triggered by a topic/channel message)
-fn := backend.Function{FunctionName: "myFn", TriggerTopic: "chan", Code: "..."}
-err := backend.AddFunction(token string, fn Function) error
+fn := backend.Function{
+    FunctionName: "processTask",
+    TriggerTopic: "tasks",
+    Code: "module.exports = async function(payload) { return payload }",
+}
 
-// List all functions
-fns, err := backend.ListFunctions(token string) ([]Function, error)
+err := backend.AddFunction(token, fn)
+functions, err := backend.ListFunctions(token)
+info, err := backend.FunctionInfo(token, "processTask")
+err = backend.UpdateFunction(token, fn)
+err = backend.DeleteFunction(token, "processTask")
+```
 
-// Update a function
-err := backend.UpdateFunction(token string, fn Function) error
+Exported function types:
 
-// Delete a function by name
-err := backend.DeleteFunction(token, name string) error
+```go
+type Function struct {
+    ID           string
+    FunctionName string
+    TriggerTopic string
+    Code         string
+    Version      int
+    LastUpdated  time.Time
+    LastRun      time.Time
+    History      []RunHistory
+}
 
-// Get function details including run history
-fn, err := backend.FunctionInfo(token, name string) (Function, error)
+type RunHistory struct {
+    ID        string
+    Version   int
+    Started   time.Time
+    Completed time.Time
+    Success   bool
+    Output    []string
+}
 ```
 
 ## Forms
 
 ```go
-// List form submissions (pass empty name for all forms)
-data, err := backend.ListForm(token, name string) ([]map[string]interface{}, error)
+all, err := backend.ListForm(token, "")
+contact, err := backend.ListForm(token, "contact")
 ```
 
-## Low-level HTTP Helpers
+`ListForm` returns `[]map[string]interface{}`.
 
-Use these when calling custom or unlisted API endpoints:
+## Extras
+
+Image resize:
 
 ```go
-backend.Get(token, url string, v interface{}) error
-backend.Post(token, url string, body interface{}, v interface{}) error
-backend.Put(token, url string, body interface{}, v interface{}) error
-backend.Del(token, url string) error
+file, err := os.Open("photo.png")
+resized, err := backend.ResizeImage(token, "photo.png", file, 1200)
+// returns backend.StoreFileResult
 ```
 
-## Complete Example
+URL to PDF or PNG:
 
 ```go
-package main
+out, err := backend.ConvertURLToX(token, backend.ConvertParam{
+    ToPDF:    true,
+    URL:      "https://example.com",
+    FullPage: true,
+})
+// returns backend.StoreFileResult
+```
 
-import (
-    "fmt"
-    "log"
+Root-token SMS via Twilio:
 
-    backend "github.com/staticbackendhq/backend-go"
-)
+```go
+err := backend.SudoSendSMS(rootToken, backend.SMSData{
+    AccountSID: "...",
+    AuthToken:  "...",
+    ToNumber:   "+15551234567",
+    FromNumber: "+15557654321",
+    Body:       "Hello",
+})
+```
 
-type Task struct {
-    ID        string `json:"id"`
-    AccountID string `json:"accountId"`
-    Title     string `json:"title"`
-    Done      bool   `json:"done"`
+Exported extra types:
+
+```go
+type ConvertParam struct {
+    ToPDF    bool   `json:"toPDF"`
+    URL      string `json:"url"`
+    FullPage bool   `json:"fullpage"`
 }
 
-func main() {
-    backend.PublicKey = "your-public-key"
-    backend.Region = backend.RegionLocalDev
-
-    token, err := backend.Register("user@example.com", "password")
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    task := Task{Title: "Buy milk"}
-    if err := backend.Create(token, "tasks", task, &task); err != nil {
-        log.Fatal(err)
-    }
-    fmt.Println("Created:", task.ID)
-
-    filters := []backend.QueryItem{
-        {Field: "done", Op: backend.QueryEqual, Value: false},
-    }
-    var tasks []Task
-    meta, err := backend.Find(token, "tasks", filters, &tasks, nil)
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Printf("%d pending tasks (total: %d)\n", len(tasks), meta.Total)
+type SMSData struct {
+    AccountSID string `json:"accountSID"`
+    AuthToken  string `json:"authToken"`
+    ToNumber   string `json:"toNumber"`
+    FromNumber string `json:"fromNumber"`
+    Body       string `json:"body"`
 }
 ```
+
+System-account creation:
+
+```go
+stripeURL, err := backend.NewSystemAccount(email)
+
+data, err := backend.NewSystemAccountBypassStripe(email, bypassFlag)
+// backend.NewSystemAccountData{PublicKey, RootToken, AdminPassword}
+```
+
+```go
+type NewSystemAccountData struct {
+    PublicKey     string `json:"pk"`
+    RootToken     string `json:"rootToken"`
+    AdminPassword string `json:"pw"`
+}
+```
+
+## Coding-Agent Notes
+
+- Prefer package helpers and exported types over hand-built HTTP calls.
+- Pass pointers for output values in DB reads and writes, for example `&task` or `&tasks`.
+- `FindOne` and `SudoFindOne` intentionally fail unless exactly one document matches.
+- `ListResult.Results` is set to the pointer passed in `v`; read your typed slice variable after the call.
+- Normal DB APIs are account-scoped. Sudo DB APIs require the root token and bypass account scoping.
+- Go exposes more admin/server helpers than the JS browser client: sudo DB, account root lookups, function management, cache/queue, forms, email, SMS, and system-account setup.

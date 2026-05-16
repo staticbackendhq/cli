@@ -24,18 +24,23 @@ When you create tag `v1.6.1` and push it, the GitHub Action will:
 ## Template
 
 ```markdown
-## What's New in vX.Y.Z
+## StaticBackend CLI vX.Y.Z
 
-### 🚀 Features
-- New feature description
+Short summary of the release in one or two sentences.
 
-### 🔧 Improvements
-- Improvement description
+### New
 
-### 🐛 Bug Fixes
-- Bug fix description
+- New command or feature
 
-### 📦 Installation
+### Changed
+
+- User-facing behavior change or improvement
+
+### Fixed
+
+- Bug fix
+
+### Install
 
 \`\`\`bash
 npm install -g @staticbackend/cli
@@ -45,6 +50,7 @@ npm install -g @staticbackend/cli
 ## Tips
 
 - Write release notes **before** creating the tag
-- Use emojis to make sections stand out
-- Include code examples for new features
+- Keep the tone direct and specific
+- Use plain section names; avoid emoji-heavy formatting
+- Include short code examples for new commands or workflows
 - Link to relevant issues/PRs
