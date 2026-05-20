@@ -9,7 +9,7 @@ import (
 )
 
 func getPublicKey() (pubKey string, ok bool) {
-	pubKey = viper.GetString("pubKey")
+	pubKey = cleanConfigValue(viper.GetString("pubKey"))
 	if len(pubKey) == 0 {
 		printError("cannot find pubKey in your .backend.yml config file")
 		fmt.Println("\nMake sure to get your StaticBackend public key and save it in a .backend.yml YAML config file.")
@@ -26,7 +26,7 @@ func getPublicKey() (pubKey string, ok bool) {
 }
 
 func getRootToken() (tok string, ok bool) {
-	tok = viper.GetString("rootToken")
+	tok = cleanConfigValue(viper.GetString("rootToken"))
 	if len(tok) == 0 {
 		printError("cannot find rootToken in your .backend.yml config file")
 		fmt.Println("\nMake sure to get your root token and save it in a .backend.yml config file.")
@@ -43,7 +43,7 @@ func getRootToken() (tok string, ok bool) {
 }
 
 func getAuthToken() (tok string, ok bool) {
-	tok = viper.GetString("authToken")
+	tok = cleanConfigValue(viper.GetString("authToken"))
 	if len(tok) == 0 {
 		printError("cannot find authToken in your .backend.yml config file")
 		fmt.Println("\nPlease run \"backend login\" to set up your credentials.")
@@ -56,8 +56,8 @@ func getAuthToken() (tok string, ok bool) {
 	}
 
 	// token expired/invalid, try to refresh
-	email := viper.GetString("email")
-	password := viper.GetString("password")
+	email := cleanConfigValue(viper.GetString("email"))
+	password := cleanConfigValue(viper.GetString("password"))
 
 	newTok, err := backend.Login(email, password)
 	if err != nil {
@@ -76,11 +76,11 @@ func getAuthToken() (tok string, ok bool) {
 }
 
 func updateAuthToken(newTok string) error {
-	pk := viper.GetString("pubKey")
-	region := viper.GetString("region")
-	rtoken := viper.GetString("rootToken")
-	email := viper.GetString("email")
-	password := viper.GetString("password")
+	pk := cleanConfigValue(viper.GetString("pubKey"))
+	region := normalizeBackendRegion(viper.GetString("region"))
+	rtoken := cleanConfigValue(viper.GetString("rootToken"))
+	email := cleanConfigValue(viper.GetString("email"))
+	password := cleanConfigValue(viper.GetString("password"))
 
 	s := fmt.Sprintf("pubKey: %s\nregion: %s\nrootToken: %s\nemail: %s\npassword: %s\nauthToken: %s", pk, region, rtoken, email, password, newTok)
 
@@ -100,7 +100,7 @@ func setBackend() bool {
 
 	backend.PublicKey = pk
 
-	region := viper.GetString("region")
+	region := normalizeBackendRegion(viper.GetString("region"))
 	if len(region) == 0 {
 		region = "dev"
 	}

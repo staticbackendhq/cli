@@ -136,7 +136,7 @@ func functionRunPrintOutput(cmd *cobra.Command, name, token string, usingRoot bo
 	}
 
 	if !usingRoot {
-		token = viper.GetString("rootToken")
+		token = cleanConfigValue(viper.GetString("rootToken"))
 		if len(token) == 0 {
 			return
 		}

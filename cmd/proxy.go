@@ -51,13 +51,13 @@ func init() {
 }
 
 func startProxy(port string) {
-	region := viper.GetString("region")
+	region := cleanConfigValue(viper.GetString("region"))
 	if len(region) == 0 {
 		printError("Missing a region config entry in your config file")
 		os.Exit(1)
 	}
 
-	proxyTarget = fmt.Sprintf("https://%s.staticbackend.dev", region)
+	proxyTarget = normalizeBackendRegion(region)
 
 	http.HandleFunc("/", proxy)
 
@@ -74,10 +74,10 @@ func proxy(w http.ResponseWriter, r *http.Request) {
 	proxy := httputil.NewSingleHostReverseProxy(t)
 
 	// Update the headers to allow for SSL redirection
-	r.URL.Host = "na1.staticbackend.dev"
-	r.URL.Scheme = "https"
+	r.URL.Host = t.Host
+	r.URL.Scheme = t.Scheme
 	r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
-	r.Host = "na1.staticbackend.dev"
+	r.Host = t.Host
 
 	// Note that ServeHttp is non blocking and uses a go routine under the hood
 	proxy.ServeHTTP(w, r)

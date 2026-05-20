@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/staticbackendhq/backend-go"
+	"golang.org/x/term"
 )
 
 // loginCmd represents the login command
@@ -46,7 +46,7 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 				return
 			}
 
-			pk = strings.Replace(pk, "\n", "", -1)
+			pk = cleanConfigValue(pk)
 
 			fmt.Print("enter host URL: ")
 			region, err = reader.ReadString('\n')
@@ -55,7 +55,7 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 				return
 			}
 
-			region = strings.Replace(region, "\n", "", -1)
+			region = normalizeBackendRegion(region)
 
 			fmt.Print("enter your Root Token: ")
 			rtoken, err = reader.ReadString('\n')
@@ -64,7 +64,7 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 				return
 			}
 
-			rtoken = strings.Replace(rtoken, "\n", "", -1)
+			rtoken = cleanConfigValue(rtoken)
 
 			fmt.Print("enter your email: ")
 			email, err = reader.ReadString('\n')
@@ -73,20 +73,19 @@ We're saving your root token in the .backend.yml file, make sure to add it to yo
 				return
 			}
 
-			email = strings.Replace(email, "\n", "", -1)
+			email = cleanConfigValue(email)
 
-			fmt.Print("enter your password: ")
-			password, err = reader.ReadString('\n')
+			password, err = readPassword(reader, "enter your password: ")
 			if err != nil {
 				fmt.Println("error: ", err)
 				return
 			}
 
-			password = strings.Replace(password, "\n", "", -1)
+			password = cleanConfigValue(password)
 		}
 
 		backend.PublicKey = pk
-		backend.Region = region
+		backend.Region = normalizeBackendRegion(region)
 
 		// we use the SudoListRepositories as a root token validator
 		if _, err := backend.SudoListRepositories(rtoken); err != nil {
@@ -122,4 +121,18 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	loginCmd.Flags().Bool("dev", false, "Setup for local development credentials")
+}
+
+func readPassword(reader *bufio.Reader, prompt string) (string, error) {
+	fmt.Print(prompt)
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		b, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Println()
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	}
+
+	return reader.ReadString('\n')
 }
