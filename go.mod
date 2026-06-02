@@ -8,6 +8,7 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/staticbackendhq/backend-go v1.7.0
 	github.com/staticbackendhq/core v1.5.0
+	golang.org/x/term v0.40.0
 )
 
 require (
@@ -54,7 +55,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gbrlsnchs/jwt/v3 v3.0.0-rc.1 // indirect
-	github.com/go-co-op/gocron v1.6.2 // indirect
+	github.com/go-co-op/gocron/v2 v2.21.2 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
@@ -62,6 +63,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
@@ -108,7 +110,6 @@ require (
 	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
@@ -122,3 +123,5 @@ require (
 )
 
 replace github.com/staticbackendhq/core => ../core
+
+replace github.com/staticbackendhq/backend-go => ../backend-go

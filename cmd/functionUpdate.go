@@ -18,6 +18,7 @@ var functionUpdateCmd = &cobra.Command{
 You may update a function, we'll auto-increment its version for you.
 
 backend function update --name fn_name --trigger web --source ./functions/web.js
+backend function update --name fn_name --trigger web --source ./functions/web.js --secrets "API_KEY=secret"
 
 We support two type of triggers at this moment:
 
@@ -62,6 +63,12 @@ We support two type of triggers at this moment:
 			return
 		}
 
+		secrets, err := cmd.Flags().GetString("secrets")
+		if err != nil {
+			printError("error reading secrets: %v", err)
+			return
+		}
+
 		fn, err := backend.FunctionInfo(tok, name)
 		if err != nil {
 			printError("function info error: %v", err)
@@ -73,6 +80,9 @@ We support two type of triggers at this moment:
 			FunctionName: name,
 			TriggerTopic: trigger,
 			Code:         string(b),
+		}
+		if cmd.Flags().Changed("secrets") {
+			upfn.Secrets = &secrets
 		}
 
 		if err := backend.UpdateFunction(tok, upfn); err != nil {
@@ -101,4 +111,5 @@ func init() {
 	functionUpdateCmd.Flags().String("name", "", "function name")
 	functionUpdateCmd.Flags().String("trigger", "", "execution trigger either web or topic")
 	functionUpdateCmd.Flags().String("source", "", "path of the JavaScript file")
+	functionUpdateCmd.Flags().String("secrets", "", "optional URL-encoded query string of function secrets")
 }

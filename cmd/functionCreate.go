@@ -17,7 +17,8 @@ var functionCreateCmd = &cobra.Command{
 
 Create a function that executes on a recurring schedule:
 
-backend funciton add --name trial_expire --trigger daily_task_trial_expire --source ./functions/trial_expire.js
+backend function add --name trial_expire --trigger daily_task_trial_expire --source ./functions/trial_expire.js
+backend function add --name fn_name --trigger web --source ./functions/web.js --secrets "API_KEY=secret"
 
 You may create server-side functions that execute based on those triggers:
 
@@ -62,10 +63,19 @@ You may create server-side functions that execute based on those triggers:
 			return
 		}
 
+		secrets, err := cmd.Flags().GetString("secrets")
+		if err != nil {
+			printError("error reading secrets: %v", err)
+			return
+		}
+
 		fn := backend.Function{
 			FunctionName: name,
 			TriggerTopic: trigger,
 			Code:         string(b),
+		}
+		if cmd.Flags().Changed("secrets") {
+			fn.Secrets = &secrets
 		}
 
 		if err := backend.AddFunction(tok, fn); err != nil {
@@ -94,4 +104,5 @@ func init() {
 	functionCreateCmd.Flags().String("name", "", "function name")
 	functionCreateCmd.Flags().String("trigger", "", "execution trigger either web or topic")
 	functionCreateCmd.Flags().String("source", "", "path of the JavaScript file")
+	functionCreateCmd.Flags().String("secrets", "", "optional URL-encoded query string of function secrets")
 }

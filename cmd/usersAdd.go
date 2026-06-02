@@ -42,7 +42,7 @@ Creates a new user account with the given email and password.
 			return
 		}
 
-		fmt.Printf("User created: %s | %s\n", user.UserID, user.Email)
+		fmt.Printf("User created: %s | %s\n", user.ID, user.Email)
 	},
 }
 

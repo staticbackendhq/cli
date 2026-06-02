@@ -36,7 +36,7 @@ Lists all users registered in your application.
 
 		fmt.Printf("%s user(s)\n\n", clbold(len(users)))
 		for _, u := range users {
-			fmt.Printf("%s | %s | %d\n", u.UserID, u.Email, u.Role)
+			fmt.Printf("%s | %s | %d\n", u.ID, u.Email, u.Role)
 		}
 	},
 }
