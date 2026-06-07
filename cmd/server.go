@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const devAppSecret = "staticbackend-cli-dev-secret-32b"
+
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
@@ -43,6 +45,7 @@ https://staticbackend.dev/cli
 
 		c := sbconfig.AppConfig{
 			AppEnv:          "dev",
+			AppSecret:       devAppSecret,
 			FromCLI:         "yes",
 			Port:            f.Value.String(),
 			DatabaseURL:     "mem",
