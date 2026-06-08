@@ -44,14 +44,12 @@ Retrieve a specific document by its id from a repository.
 			return
 		}
 
-		o := "{\n"
-		for k, v := range result {
-			o += fmt.Sprintf("\t%s: %v, \n", k, v)
+		formatOpts, err := getDBDocumentFormatOptions(cmd)
+		if err != nil {
+			return
 		}
 
-		o += "}"
-
-		fmt.Println(o)
+		fmt.Println(formatDBDocument(result, formatOpts))
 	},
 }
 
@@ -63,4 +61,5 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// accountCmd.PersistentFlags().String("foo", "", "A help for foo")
+	addDBDocumentFormatFlag(dbGetCmd)
 }

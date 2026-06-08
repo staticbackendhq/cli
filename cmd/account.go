@@ -19,7 +19,6 @@ We're requiring a credit card when creating new account.
 	`,
 		clbold("Manage your account"),
 	),
-
 }
 
 func init() {

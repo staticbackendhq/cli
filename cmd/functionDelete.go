@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/staticbackendhq/backend-go"
-	"fmt"
 )
 
 // functionList lists all server-side functions

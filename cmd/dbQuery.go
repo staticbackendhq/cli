@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/staticbackendhq/backend-go"
@@ -74,6 +73,11 @@ Supported operators:
 			return
 		}
 
+		formatOpts, err := getDBDocumentFormatOptions(cmd)
+		if err != nil {
+			return
+		}
+
 		lp := &backend.ListParams{
 			Page:       page,
 			Size:       size,
@@ -92,16 +96,7 @@ Supported operators:
 		}
 
 		fmt.Printf("%s result(s)\n\n", clbold(meta.Total))
-		for _, doc := range results {
-			o := "{ "
-			for k, v := range doc {
-				o += fmt.Sprintf("%s: %v, ", k, v)
-			}
-
-			o = strings.TrimSuffix(o, ", ") + " }"
-
-			fmt.Println(o)
-		}
+		printDBDocuments(results, formatOpts)
 	},
 }
 
@@ -117,6 +112,7 @@ func init() {
 	dbQueryCmd.Flags().BoolP("descending", "d", false, "List in descending order of creation")
 	dbQueryCmd.Flags().Int("page", 1, "Page index")
 	dbQueryCmd.Flags().Int("size", 50, "Number of documents to retrieve")
+	addDBDocumentFormatFlag(dbQueryCmd)
 }
 
 func argsToQueryItem(args []string) []backend.QueryItem {

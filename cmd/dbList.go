@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/staticbackendhq/backend-go"
@@ -51,6 +50,11 @@ You may view documents from first to last or last to first.
 			return
 		}
 
+		formatOpts, err := getDBDocumentFormatOptions(cmd)
+		if err != nil {
+			return
+		}
+
 		lp := &backend.ListParams{
 			Page:       page,
 			Size:       size,
@@ -65,16 +69,7 @@ You may view documents from first to last or last to first.
 		}
 
 		fmt.Printf("%s result(s)\n\n", clbold(meta.Total))
-		for _, doc := range results {
-			o := "{ "
-			for k, v := range doc {
-				o += fmt.Sprintf("%s: %v, ", k, v)
-			}
-
-			o = strings.TrimSuffix(o, ", ") + " }"
-
-			fmt.Println(o)
-		}
+		printDBDocuments(results, formatOpts)
 	},
 }
 
@@ -90,4 +85,5 @@ func init() {
 	dbListCmd.Flags().BoolP("descending", "d", false, "List in descending order of creation")
 	dbListCmd.Flags().Int("page", 1, "Page index")
 	dbListCmd.Flags().Int("size", 50, "Number of documents to retrieve")
+	addDBDocumentFormatFlag(dbListCmd)
 }

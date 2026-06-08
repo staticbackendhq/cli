@@ -17,7 +17,6 @@ You may list, add, and delete users for your application.
 	`,
 		clbold("Manage your application users"),
 	),
-
 }
 
 func init() {
