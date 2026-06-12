@@ -1,6 +1,6 @@
 module github.com/staticbackendhq/cli
 
-go 1.25.0
+go 1.26.4
 
 require (
 	github.com/gookit/color v1.2.2
