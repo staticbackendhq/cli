@@ -84,9 +84,11 @@ Supported operators:
 			Descending: desc,
 		}
 
-		filters := argsToQueryItem(args[1:])
-
-		fmt.Println(filters)
+		filters, err := argsToQueryItem(args[1:])
+		if err != nil {
+			printError("An error occurred: %v", err)
+			return
+		}
 
 		var results []map[string]interface{}
 		meta, err := backend.SudoFind(tok, repo, filters, &results, lp)
@@ -115,41 +117,48 @@ func init() {
 	addDBDocumentFormatFlag(dbQueryCmd)
 }
 
-func argsToQueryItem(args []string) []backend.QueryItem {
+func argsToQueryItem(args []string) ([]backend.QueryItem, error) {
+	if len(args)%3 != 0 {
+		return nil, fmt.Errorf("filters must be provided as field/operator/value triples")
+	}
+
 	var filters []backend.QueryItem
 
 	for i := 0; i < len(args); i++ {
+		op, err := stringToQueryOperator(args[i+1])
+		if err != nil {
+			return nil, err
+		}
+
 		filters = append(filters, backend.QueryItem{
 			Field: args[i],
-			Op:    stringToQueryOperator(args[i+1]),
+			Op:    op,
 			Value: stringToQueryValue(args[i+2]),
 		})
 
 		i += 2
 	}
 
-	return filters
+	return filters, nil
 }
 
-func stringToQueryOperator(op string) backend.QueryOperator {
-	var qop backend.QueryOperator
-
+func stringToQueryOperator(op string) (backend.QueryOperator, error) {
 	switch op {
 	case "=", "==":
-		qop = backend.QueryEqual
+		return backend.QueryEqual, nil
 	case "!=", "<>":
-		qop = backend.QueryNotEqual
+		return backend.QueryNotEqual, nil
 	case ">":
-		qop = backend.QueryGreaterThan
+		return backend.QueryGreaterThan, nil
 	case ">=":
-		qop = backend.QueryGreaterThanEqual
+		return backend.QueryGreaterThanEqual, nil
 	case "<":
-		qop = backend.QueryLowerThan
+		return backend.QueryLowerThan, nil
 	case "<=":
-		qop = backend.QueryLowerThanEqual
+		return backend.QueryLowerThanEqual, nil
 	}
 
-	return qop
+	return "", fmt.Errorf("unsupported query operator %q", op)
 }
 
 func stringToQueryValue(s string) interface{} {
