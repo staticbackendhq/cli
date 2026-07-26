@@ -7,7 +7,6 @@ import (
 
 	staticbackend "github.com/staticbackendhq/core"
 	sbconfig "github.com/staticbackendhq/core/config"
-	"github.com/staticbackendhq/core/logger"
 
 	"github.com/spf13/cobra"
 )
@@ -60,9 +59,7 @@ https://staticbackend.dev/cli
 			c.DataStore = "sqlite"
 		}
 
-		log := logger.Get(c)
-
-		staticbackend.Start(c, log)
+		staticbackend.Start(c)
 	},
 }
 
